@@ -1,111 +1,547 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+/* -
+   PBAS Design System - Modern UI
+   Modernizes typography, focus states, scrollbars, hover effects and
+   row interactions across all dashboards.  No functionality is changed.
+   - */
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* - Base reset - */
+*, *::before, *::after { box-sizing: border-box; }
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #f8fafc;
+  color: #1e293b;
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+/* - Custom scrollbar - */
+::-webkit-scrollbar            { width: 6px;  height: 6px; }
+::-webkit-scrollbar-track      { background: transparent; }
+::-webkit-scrollbar-thumb      { background: #cbd5e1; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover{ background: #94a3b8; }
+
+/* - Text selection - */
+::selection { background: rgba(99,102,241,0.14); color: #1e293b; }
+
+/* - Smooth transitions for all interactive elements - */
+button {
+  transition:
+    background  0.15s ease,
+    color       0.15s ease,
+    box-shadow  0.15s ease,
+    border-color 0.15s ease,
+    opacity     0.15s ease;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+a {
+  text-decoration: none;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+a:hover { opacity: 0.82; }
+
+/* - Input / textarea / select focus ring -
+   Inline styles set outline:none but leave box-shadow unset, so the ring
+   is injected via CSS without touching any component code.
+   - */
+input:focus:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+textarea:focus,
+select:focus {
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.15) !important;
+  border-color: #818cf8 !important;
+  outline: none;
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+/* - Table body row hover -
+   Inline backgrounds (striped rows) are overridden via !important only
+   on hover so the effect is visible against any base row color.
+   - */
+tbody tr:hover > td {
+  background-color: rgba(99,102,241,0.045) !important;
+  transition: background-color 0.12s ease;
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
+
+/* - Sidebar button hover -
+   Applies a subtle glass-effect highlight to all direct-child buttons
+   inside the <aside> sidebar - nav items, profile link, and logout.
+   - */
+aside > button:hover {
+  background: rgba(255,255,255,0.09) !important;
 }
-p {
+
+/* - Number input: hide spinners - */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
   margin: 0;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+/* - Status / grade badge pill - */
+.pbas-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  letter-spacing: 0.2px;
 }
+
+/* - Score progress bar - */
+.pbas-score-bar {
+  width: 100%;
+  height: 5px;
+  border-radius: 4px;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+.pbas-score-bar__fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+/* - Section card - */
+.pbas-section-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.07), 0 0 0 1px rgba(15,23,42,0.05);
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.pbas-section-card__header {
+  padding: 11px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.pbas-section-card__body {
+  padding: 14px 16px;
+}
+
+/* - Overflow-scroll wrapper for wide tables - */
+.pbas-table-scroll {
+  overflow-x: auto;
+  border-radius: 6px;
+}
+
+/* - Save footer - */
+.pbas-save-footer {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* - Print: hide sidebar - */
+@media print {
+  aside { display: none !important; }
+}
+
+/* - Responsive: narrow sidebar on small screens - */
+@media (max-width: 960px) {
+  aside { width: 220px !important; }
+}
+@media (max-width: 720px) {
+  aside {
+    position: fixed !important;
+    z-index: 100;
+    transform: translateX(-100%);
+  }
+}
+
+/* ====================================================
+   VC DASHBOARD — Full UI Redesign
+   Pure visual overhaul. No logic, no data, no functionality touched.
+   ==================================================== */
+
+/* App shell */
+.vc-app-shell {
+  background: #f0f4ff !important;
+}
+
+/* Sidebar */
+.vc-sidebar {
+  width: 272px !important;
+  background: linear-gradient(175deg, #08091a 0%, #0e1134 50%, #0a0d20 100%) !important;
+  border-right: 1px solid rgba(99,102,241,0.12) !important;
+  box-shadow: 4px 0 40px rgba(8,9,26,0.40) !important;
+}
+
+/* Brand logo mark */
+.vc-brand-mark {
+  background: linear-gradient(135deg,#7c3aed,#4f46e5) !important;
+  box-shadow: 0 8px 24px rgba(124,58,237,0.35), inset 0 1px 0 rgba(255,255,255,0.15) !important;
+  border-radius: 14px !important;
+}
+
+/* VC role card */
+.vc-sidebar-role-card {
+  background: linear-gradient(135deg,#3b0070 0%,#4c1d95 60%,#5b21b6 100%) !important;
+  border: 1px solid rgba(167,139,250,0.22) !important;
+  box-shadow: 0 8px 24px rgba(76,29,149,0.28), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+  border-radius: 14px !important;
+}
+
+/* Sidebar nav / cards */
+.vc-sidebar-nav {
+  background: rgba(99,102,241,0.14) !important;
+  border: 1px solid rgba(99,102,241,0.20) !important;
+  border-radius: 12px !important;
+  transition: background 0.18s ease, border-color 0.18s ease !important;
+}
+.vc-sidebar-nav:hover {
+  background: rgba(99,102,241,0.22) !important;
+  border-color: rgba(99,102,241,0.35) !important;
+}
+
+.vc-sidebar-card {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 12px !important;
+}
+
+.vc-sidebar-help {
+  background: rgba(37,99,235,0.12) !important;
+  border: 1px solid rgba(59,130,246,0.25) !important;
+  border-radius: 12px !important;
+}
+
+/* Main content area */
+.vc-dashboard-main {
+  background: transparent !important;
+}
+
+.vc-dashboard-hero {
+  gap: 18px;
+  margin-bottom: 8px;
+}
+
+/* Count pills */
+.vc-total-pill {
+  border: 1px solid rgba(15,23,42,0.08) !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  transition: transform 0.18s ease, box-shadow 0.18s ease !important;
+}
+.vc-total-pill:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(15,23,42,0.12) !important;
+}
+
+.vc-count-pill {
+  border-radius: 20px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  transition: transform 0.15s ease !important;
+}
+.vc-count-pill--pending {
+  background: linear-gradient(135deg,#fef3c7,#fde68a) !important;
+  border: 1px solid #fcd34d !important;
+  color: #78350f !important;
+}
+
+/* Segmented tabs container */
+.vc-segmented-tabs {
+  min-width: 720px;
+  border: 1px solid rgba(15,23,42,0.07) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 2px 12px rgba(15,23,42,0.08) !important;
+  background: #fff !important;
+  padding: 5px !important;
+}
+
+/* Individual tab buttons */
+.vc-segmented-tab {
+  position: relative;
+  border-radius: 10px !important;
+  transition: all 0.2s ease !important;
+}
+.vc-segmented-tab:hover:not(.is-active) {
+  background: #f8fafc !important;
+  color: #374151 !important;
+}
+.vc-segmented-tab:focus-visible {
+  outline: 3px solid rgba(99,102,241,0.22);
+  outline-offset: 2px;
+}
+
+/* School tabs container */
+.vc-school-tabs {
+  border-radius: 14px !important;
+  border: 1px solid rgba(15,23,42,0.07) !important;
+  box-shadow: 0 2px 12px rgba(15,23,42,0.07) !important;
+  overflow: hidden;
+}
+
+.vc-school-tab {
+  position: relative;
+  transition: all 0.2s ease !important;
+}
+.vc-school-tab:hover:not(.is-active) {
+  background: #f8fafc !important;
+}
+.vc-school-tab:focus-visible {
+  outline: 3px solid rgba(99,102,241,0.22);
+  outline-offset: 2px;
+}
+
+/* School summary banner */
+.vc-school-summary {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px !important;
+  border: 1px solid rgba(15,23,42,0.07) !important;
+  box-shadow: 0 4px 16px rgba(15,23,42,0.07) !important;
+  transition: box-shadow 0.2s ease !important;
+}
+.vc-school-summary:hover {
+  box-shadow: 0 8px 28px rgba(15,23,42,0.12) !important;
+}
+
+.vc-school-icon {
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  border-radius: 14px !important;
+}
+.vc-school-summary:hover .vc-school-icon {
+  transform: scale(1.06) rotate(-2deg);
+}
+
+/* Person / review cards */
+.vc-review-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px !important;
+  border: 1px solid rgba(15,23,42,0.07) !important;
+  transition: transform 0.2s ease, box-shadow 0.25s ease !important;
+  background: #fff !important;
+}
+.vc-review-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(15,23,42,0.13) !important;
+  border-color: rgba(99,102,241,0.18) !important;
+}
+
+.vc-score-strip {
+  transition: background 0.18s ease;
+  border-radius: 10px !important;
+}
+.vc-review-card:hover .vc-score-strip {
+  background: #eef2ff !important;
+}
+
+/* Review action button */
+.vc-action-button {
+  border-radius: 8px !important;
+  letter-spacing: 0.2px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease !important;
+}
+.vc-action-button:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(76,29,149,0.30) !important;
+  opacity: 0.92;
+}
+
+/* Empty state */
+.vc-empty-state {
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px !important;
+  border: 1.5px dashed #e2e8f0 !important;
+  background: #fafbff !important;
+  box-shadow: none !important;
+}
+.vc-empty-orb {
+  transition: transform 0.22s ease;
+}
+.vc-empty-state:hover .vc-empty-orb {
+  transform: translateY(-3px) scale(1.05);
+}
+
+/* Card grid */
+.vc-card-grid {
+  animation: fa-fade-up 0.22s ease both;
+}
+
+@media (max-width: 1100px) {
+  .vc-dashboard-hero {
+    align-items: flex-start !important;
+    flex-direction: column;
+  }
+
+  .vc-hero-right,
+  .vc-segmented-tabs,
+  .vc-school-tabs {
+    width: 100% !important;
+    overflow-x: auto !important;
+  }
+
+  .vc-segmented-tab,
+  .vc-school-tab {
+    min-width: max-content;
+  }
+
+  .vc-card-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .vc-dashboard-main {
+    padding: 18px !important;
+  }
+
+  .vc-school-summary {
+    align-items: flex-start !important;
+    flex-direction: column;
+  }
+
+  .vc-school-summary > div:last-child {
+    flex-wrap: wrap;
+  }
+}
+
+
+/* =
+   PBAS Animation & Transition System
+   Purely visual - no functionality, logic, or layout is changed.
+   = */
+
+/* - Keyframes - */
+@keyframes fa-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes fa-fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fa-scale-in {
+  from { opacity: 0; transform: scale(0.93); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes fa-slide-in-left {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes fa-slide-in-top {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fa-pulse-soft {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.52; }
+}
+
+/* - Utility Animation Classes - */
+.fa-fade-in    { animation: fa-fade-in      0.28s ease both; }
+.fa-fade-up    { animation: fa-fade-up      0.38s ease both; }
+.fa-scale-in   { animation: fa-scale-in     0.32s cubic-bezier(0.34,1.56,0.64,1) both; }
+.fa-slide-left { animation: fa-slide-in-left 0.34s ease both; }
+.fa-slide-top  { animation: fa-slide-in-top  0.28s ease both; }
+.fa-page-enter { animation: fa-fade-up      0.40s ease both; }
+.fa-pulse      { animation: fa-pulse-soft   1.6s ease-in-out infinite; }
+
+/* - Page / Layout Entrance - */
+/* Dashboard content area fades in on component mount */
+main { animation: fa-fade-in 0.30s ease both; }
+
+/* Sidebar slides in from left - desktop only so it doesn't fight
+   the mobile hidden-translate rule */
+@media (min-width: 721px) {
+  aside { animation: fa-slide-in-left 0.28s ease both; }
+}
+
+/* - Section Card - Staggered Entrance + Hover Lift - */
+.fa-section-card {
+  animation: fa-fade-up 0.38s ease both;
+  transition: box-shadow 0.26s ease, transform 0.26s ease !important;
+}
+/* Stagger each card so they cascade in one after another */
+.fa-section-card:nth-child(1) { animation-delay:   0ms; }
+.fa-section-card:nth-child(2) { animation-delay:  55ms; }
+.fa-section-card:nth-child(3) { animation-delay: 110ms; }
+.fa-section-card:nth-child(4) { animation-delay: 165ms; }
+.fa-section-card:nth-child(5) { animation-delay: 220ms; }
+.fa-section-card:nth-child(6) { animation-delay: 275ms; }
+.fa-section-card:nth-child(7) { animation-delay: 330ms; }
+.fa-section-card:nth-child(8) { animation-delay: 385ms; }
+.fa-section-card:hover {
+  box-shadow: 0 8px 30px rgba(15,23,42,0.12) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* - Button Micro-Interactions - */
+button {
+  transition:
+    background   0.18s ease,
+    color        0.18s ease,
+    box-shadow   0.18s ease,
+    border-color 0.18s ease,
+    opacity      0.18s ease,
+    transform    0.10s ease !important;
+}
+/* Press effect on all enabled buttons */
+button:not(:disabled):active { transform: scale(0.96) !important; }
+
+/* Primary blue (#2563eb) - darker on hover + shadow glow + micro-lift */
+button[style*="#2563eb"]:not(:disabled):hover {
+  background: #1d4ed8 !important;
+  box-shadow: 0 4px 16px rgba(37,99,235,0.38) !important;
+  transform: translateY(-1px) !important;
+}
+/* Dark navy (#0f172a) - shadow lift */
+button[style*="#0f172a"]:not(:disabled):hover {
+  box-shadow: 0 4px 14px rgba(15,23,42,0.28) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* - Sidebar Nav Button Transitions - */
+aside button {
+  transition:
+    background        0.18s ease,
+    color             0.18s ease,
+    border-left-color 0.18s ease,
+    transform         0.10s ease !important;
+}
+aside button:not(:disabled):active { transform: scale(0.97) !important; }
+
+/* - Form Controls - Smooth State Transitions - */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+select,
+textarea {
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease !important;
+}
+/* Checkbox - subtle micro-bounce on click */
+input[type="checkbox"] {
+  cursor: pointer;
+  transition: transform 0.12s ease !important;
+}
+input[type="checkbox"]:active { transform: scale(0.82) !important; }
+
+/* - Modal Overlay & Content Box Animations - */
+/* Backdrop fade - matches the rgba(15,23,42,0.55) overlay used in dashboards */
+div[style*="rgba(15,23,42,0.55)"]       { animation: fa-fade-in  0.20s ease both; }
+div[style*="rgba(15,23,42,0.55)"] > div { animation: fa-scale-in 0.26s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+/* - Table Row - */
+tbody tr { transition: background-color 0.12s ease; }

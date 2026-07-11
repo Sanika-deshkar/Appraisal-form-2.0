@@ -1,0 +1,100 @@
+BACKEND ERROR HANDLING — FRONTEND INTEGRATION GUIDE
+=====================================================
+
+Every error response (4xx and 5xx) returns the same JSON shape:
+
+  {
+    "user_message": "...",   <-- always show this in the UI
+    "detail": "..."          <-- ignore in the UI; for network tab / bug reports only
+  }
+
+Some 500s also include "type" and "path" for extra debugging context,
+but you don't need to render those either.
+
+
+SIMPLE RULE
+-----------
+Always read "user_message" to display to the user.
+Never display "detail" — it may contain internal stack trace info.
+
+  // Example (pseudocode, adapt to your framework)
+  try {
+    const res = await api.post('/appraisal/submit', payload)
+  } catch (err) {
+    const msg = err.response?.data?.user_message
+               ?? "Something went wrong. Please try again."
+    showToast(msg, 'error')
+  }
+
+
+ERRORS BY STATUS CODE
+---------------------
+
+401 — Not logged in / bad token:
+  { "user_message": "Authorization header missing.", "detail": "..." }
+  { "user_message": "Invalid token: ...", "detail": "..." }
+
+403 — Wrong role or not authorized:
+  { "user_message": "HOD role required.", "detail": "..." }
+  { "user_message": "Director role required.", "detail": "..." }
+  { "user_message": "VC role required.", "detail": "..." }
+  { "user_message": "Not authorized to update remarks for this faculty", "detail": "..." }
+  { "user_message": "Appraisal submissions for 2025-2026 are currently closed.", "detail": "..." }
+
+400 — Bad request:
+  { "user_message": "Email already registered", "detail": "..." }
+  { "user_message": "Incorrect current password", "detail": "..." }
+  { "user_message": "Invalid, expired, or already used reset token", "detail": "..." }
+  { "user_message": "Form data is missing. Ensure 'form' or 'payload.form' key is present.", "detail": "..." }
+
+404 — Resource not found:
+  { "user_message": "Faculty not found", "detail": "..." }
+  { "user_message": "Staff profile not found", "detail": "..." }
+  { "user_message": "Appraisal not found", "detail": "..." }
+
+422 — Validation error (missing or malformed field):
+  {
+    "user_message": "The request data is invalid. Please check the highlighted fields and try again.",
+    "detail": [ ...pydantic error list... ]
+  }
+  Note: this also fires if a required field like academic_year is missing from the
+  request body on review/submit endpoints.
+
+  Exception — the feedback form (/feedback POST) has its own field-level errors:
+  { "success": false, "errors": { "email": "Enter a valid email address.", ... } }
+  Map those directly to inline form errors.
+
+500 — File upload failed:
+  { "user_message": "Your file could not be uploaded. Please try again.", "detail": "..." }
+
+500 — Appraisal submit failed:
+  { "user_message": "Your appraisal could not be submitted. Please try again.", "detail": "..." }
+
+500 — Draft snapshot save failed:
+  { "user_message": "Your draft could not be saved. Please try again.", "detail": "..." }
+
+500 — Database error:
+  { "user_message": "A database error occurred. Please try again or contact support.", "detail": "..." }
+
+500 — Any other unexpected error:
+  {
+    "user_message": "An unexpected error occurred. Please try again or contact support.",
+    "detail": "...(technical, do not show)...",
+    "type": "KeyError",
+    "path": "/api/v1/appraisal/submit"
+  }
+
+
+BACKWARD COMPATIBILITY
+----------------------
+If you ever get a response that only has "detail" and no "user_message"
+(very old endpoint or edge case), fall back gracefully:
+
+  const msg = err.response?.data?.user_message
+             ?? err.response?.data?.detail
+             ?? "Something went wrong. Please try again."
+
+
+QUESTIONS
+---------
+Ping Ruhan if anything is unclear.

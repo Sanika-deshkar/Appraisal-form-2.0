@@ -1,0 +1,189 @@
+I need this flow of form with transparency in my frontend as per the hierarchy given below: 
+
+Vice Chancellor (VC)
+│
+├── Teaching Staff
+│   │
+│   ├── Dean of Engineering
+│   │   ├── SoCSEA — School of Computer Science, Engineering & Applications
+│   │   │   ├── Director
+│   │   │   └── Faculty
+│   │   ├── SoBB — School of Bio-Engineering & Bio Science
+│   │   │   ├── Director
+│   │   │   └── Faculty
+│   │   ├── SoCE — School of Continual Education
+│   │   │   ├── Director
+│   │   │   └── Faculty
+│   │   └── SoEMR — School of Engineering Management & Research
+│   │       └── Director
+│   │           ├── HOD — Mechanical Engineering → Faculty
+│   │           ├── HOD — Civil Engineering → Faculty
+│   │           ├── HOD — Chemical Engineering → Faculty
+│   │           └── HOD — Semiconductor Engineering → Faculty
+│   │
+│   ├── Dean of Non-Engineering
+│   │   ├── SoC — School of Commerce & Management
+│   │   │   ├── Director
+│   │   │   └── Faculty
+│   │   ├── SoMCS — School of Media & Communication Studies
+│   │   │   ├── Director
+│   │   │   └── Faculty
+│   │   ├── SoD — School of Design
+│   │   │   ├── Director
+│   │   │   └── Faculty
+│   │   └── SoAA — School of Applied Arts
+│   │       ├── Director
+│   │       └── Faculty
+│   │
+│   └── Center for Interdisciplinary Studies and Research (CISR)
+│       └── Center Head
+│           └── Faculty
+│
+└── Non-Teaching Staff
+└── Registrar
+└── Reporting Officer
+└── Staff
+
+The flow and transparency I want:
+
+### 1) For the school SoEMR:
+
+#### For Faculty:
+
+When the faculty fills the form and submits it, the form should go to the HOD. If the faculty belongs to the Mechanical department, then the form should go only to the HOD of the Mechanical department. Then the HOD will insert a score into the faculty form and submit it. After that, the form gets forwarded to the Director, and the form should go only to the Director of SoEMR. Then the Director inserts a score into the faculty form and submits it. After that, the form gets forwarded to the Dean, and the form should go only to the Dean of Engineering. Then the Dean inserts a score into the faculty form and submits it. Finally, the form goes to the VC, and the VC inserts a score into the faculty form and submits it.
+
+#### For HOD:
+
+When the HOD fills the form and submits it, the form gets forwarded to the Director, and the form should go only to the Director of SoEMR. Then the Director inserts a score into the HOD form and submits it. After that, the form gets forwarded to the Dean, and the form should go only to the Dean of Engineering. Then the Dean inserts a score into the HOD form and submits it. Finally, the form goes to the VC, and the VC inserts a score into the HOD form and submits it.
+
+#### For Director:
+
+When the Director fills the form and submits it, the form gets forwarded to the Dean, and the form should go only to the Dean of Engineering. Then the Dean inserts a score into the Director form and submits it. Finally, the form goes to the VC, and the VC inserts a score into the Director form and submits it.
+
+#### For Dean:
+
+When the Dean fills the form and submits it, the form gets forwarded to the VC, and the VC inserts a score into the Dean form and submits it.
+
+### Transparency in Flow:
+
+In the VC dashboard, teaching appraisal cards and the opened VC review form show an "Average Score" before the VC score. This value is calculated from the available scores submitted before the VC stage: the self/faculty score and the applicable prior reviewer scores in that chain, such as HOD or Center Head, Director, and Dean. The score summary in the opened VC review header is displayed to one decimal place. In the VC review form's Personal Information section, the rows ExpDyp, ExpPrev, and ExpTotal are hidden for display clarity.
+
+#### For Faculty:
+
+When the faculty fills the form and submits it, the form should go to the HOD. If the faculty belongs to the Mechanical department, then the form should go only to the HOD of the Mechanical department. Then the HOD inserts a score into the faculty form and submits it. After that, the form gets forwarded to the Director, and the Director should not be able to see the score given by the HOD. The Director should only be able to see the self-score given by the faculty. Then the Director inserts a score into the faculty form and submits it. After that, the form gets forwarded to the Dean, and the Dean should not be able to see the scores given by the HOD and Director. The Dean should only be able to see the self-score given by the faculty. Then the Dean inserts a score into the faculty form and submits it. Finally, the form goes to the VC, and the VC will be able to see the scores given by the Faculty, HOD, Director, and Dean. Then the VC inserts a score into the faculty form and submits it.
+
+#### For HOD:
+
+When the HOD fills the form and submits it, the form gets forwarded to the Director. Then the Director inserts a score into the HOD form and submits it. After that, the form gets forwarded to the Dean, and the Dean should not be able to see the score given by the Director. The Dean should only be able to see the self-score given by the HOD. Then the Dean inserts a score into the HOD form and submits it. Finally, the form goes to the VC, and the VC will be able to see the scores given by the HOD, Director, and Dean. Then the VC inserts a score into the HOD form and submits it.
+
+#### For Director:
+
+When the Director fills the form and submits it, the form gets forwarded to the Dean. Then the Dean inserts a score into the Director form and submits it. Finally, the form goes to the VC, and the VC will be able to see the scores given by the Director and Dean. Then the VC inserts a score into the Director form and submits it.
+
+#### For Dean:
+
+When the Dean fills the form and submits it, the form gets forwarded to the VC, and the VC inserts a score into the Dean form and submits it.
+
+### 2) For the schools SoCSEA, SoBB, and SoCE:
+
+#### For Faculty:
+
+When the faculty fills the form and submits it, the form gets forwarded to the Director. The form should go only to the Director of the respective school of the faculty. Then the Director inserts a score into the faculty form and submits it. After that, the form gets forwarded to the Dean, and the form should go only to the Dean of Engineering. The Dean should not be able to see the score given by the Director and should only be able to see the self-score given by the faculty. Then the Dean inserts a score into the faculty form and submits it. Finally, the form goes to the VC, and the VC will be able to see the scores given by the Faculty, Director, and Dean. Then the VC inserts a score into the faculty form and submits it.
+
+#### For Director:
+
+When the Director fills the form and submits it, the form gets forwarded to the Dean, and the form should go only to the Dean of Engineering. Then the Dean inserts a score into the Director form and submits it. Finally, the form goes to the VC, and the VC inserts a score into the Director form and submits it.
+
+#### For Dean:
+
+When the Dean fills the form and submits it, the form gets forwarded to the VC, and the VC inserts a score into the Dean form and submits it.
+
+### Transparency in Flow:
+
+#### For Faculty:
+
+When the faculty fills the form and submits it, the form gets forwarded to the Director. The form should go only to the Director of the respective school of the faculty. Then the Director inserts a score into the faculty form and submits it. After that, the form gets forwarded to the Dean, and the Dean inserts a score into the faculty form and submits it. Finally, the form goes to the VC, and the VC inserts a score into the faculty form and submits it.
+
+#### For Director:
+
+When the Director fills the form and submits it, the form gets forwarded to the Dean, and the form should go only to the Dean of Engineering. Then the Dean inserts a score into the Director form and submits it. Finally, the form goes to the VC, and the VC will be able to see the scores given by the Director and Dean. Then the VC inserts a score into the Director form and submits it.
+
+#### For Dean:
+
+When the Dean fills the form and submits it, the form gets forwarded to the VC, and the VC inserts a score into the Dean form and submits it.
+
+### 3) For the schools SoC, SoMCS, SoD, and SoAA:
+
+#### For Faculty:
+
+When the faculty fills the form and submits it, the form gets forwarded to the Director. The form should go only to the Director of the respective school of the faculty. Then the Director inserts a score into the faculty form and submits it. After that, the form gets forwarded to the Dean, and the form should go only to the Dean of Non-Engineering. Then the Dean inserts a score into the faculty form and submits it. Finally, the form goes to the VC, and the VC inserts a score into the faculty form and submits it.
+
+#### For Director:
+
+When the Director fills the form and submits it, the form gets forwarded to the Dean, and the form should go only to the Dean of Non-Engineering. Then the Dean inserts a score into the Director form and submits it. Finally, the form goes to the VC, and the VC inserts a score into the Director form and submits it.
+
+#### For Dean:
+
+When the Dean fills the form and submits it, the form gets forwarded to the VC, and the VC inserts a score into the Dean form and submits it.
+
+### Transparency in Flow:
+
+#### For Faculty:
+
+When the faculty fills the form and submits it, the form gets forwarded to the Director. The form should go only to the Director of the respective school of the faculty. Then the Director inserts a score into the faculty form and submits it. After that, the form gets forwarded to the Dean, and the Dean inserts a score into the faculty form and submits it. Finally, the form goes to the VC, and the VC inserts a score into the faculty form and submits it.
+
+#### For Director:
+
+When the Director fills the form and submits it, the form gets forwarded to the Dean, and the form should go only to the Dean of Non-Engineering. Then the Dean inserts a score into the Director form and submits it. Finally, the form goes to the VC, and the VC will be able to see the scores given by the Director and Dean. Then the VC inserts a score into the Director form and submits it.
+
+#### For Dean:
+
+When the Dean fills the form and submits it, the form gets forwarded to the VC, and the VC inserts a score into the Dean form and submits it.
+
+### 4) For the Center for Interdisciplinary Studies and Research (CISR):
+
+#### For Faculty:
+
+When the faculty fills the form and submits it, the form gets forwarded to the Center Head. Then the Center Head inserts a score into the faculty form and submits it. Finally, the form gets forwarded to the VC, and the VC inserts a score into the faculty form and submits it.
+
+#### For Center Head:
+
+When the Center Head fills the form and submits it, the form gets forwarded to the VC, and the VC inserts a score into the Center Head form and submits it.
+
+### Transparency in Flow:
+
+#### For Faculty:
+
+When the faculty fills the form and submits it, the form gets forwarded to the Center Head. Then the Center Head inserts a score into the faculty form and submits it. Finally, the form gets forwarded to the VC, and the VC inserts a score into the faculty form and submits it.
+
+#### For Center Head:
+
+When the Center Head fills the form and submits it, the form gets forwarded to the VC, and the VC inserts a score into the Center Head form and submits it.
+
+### 5) Non-Teaching Staff:
+
+#### For Staff:
+
+When the staff fills the form and submits it, the form gets forwarded to the Reporting Officer. Then the Reporting Officer inserts a score into the staff form and submits it. After that, the form gets forwarded to the Registrar. Then the Registrar inserts a score into the staff form and submits it. Finally, the form goes to the VC, and the VC inserts a score into the staff form and submits it.
+
+#### For Reporting Officer:
+
+When the Reporting Officer fills the form and submits it, the form gets forwarded to the Registrar. Then the Registrar inserts a score into the Reporting Officer form and submits it. Finally, the form goes to the VC, and the VC inserts a score into the Reporting Officer form and submits it.
+
+#### For Registrar:
+
+When the Registrar fills the form and submits it, the form gets forwarded to the VC, and the VC inserts a score into the Registrar form and submits it.
+
+### Transparency in Flow:
+
+#### For Staff:
+
+When the staff fills the form and submits it, the form gets forwarded to the Reporting Officer. Then the Reporting Officer inserts a score into the staff form and submits it. After that, the form gets forwarded to the Registrar, and the Registrar should not be able to see the score given by the Reporting Officer. Then the Registrar inserts a score into the staff form and submits it. Finally, the form goes to the VC, and the VC will be able to see the scores given by the Staff, Reporting Officer, and Registrar. Then the VC inserts a score into the staff form and submits it.
+
+#### For Reporting Officer:
+
+When the Reporting Officer fills the form and submits it, the form gets forwarded to the Registrar. Then the Registrar inserts a score into the Reporting Officer form and submits it. Finally, the form goes to the VC, and the VC will be able to see the scores given by the Reporting Officer and Registrar. Then the VC inserts a score into the Reporting Officer form and submits it.
+
+#### For Registrar:
+
+When the Registrar fills the form and submits it, the form gets forwarded to the VC, and the VC inserts a score into the Registrar form and submits it.
