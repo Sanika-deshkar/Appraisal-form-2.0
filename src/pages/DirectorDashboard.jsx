@@ -1,11 +1,11 @@
-﻿/* eslint-disable no-unused-vars, no-undef */
+﻿/* eslint-disable no-unused-vars */
 import { useState, useRef, useEffect } from "react";
 import { DirectorFacultyReviewForm } from "../components/appraisal";
 import { api } from "../services/api";
 import { Avatar, CompactSummaryCard, ScoreBar, StatusBadge } from "../components/dashboard/dashboardPrimitives";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
 import DashboardSidebar from "../components/dashboard/DashboardSidebar";
-import { ACR_DETAIL_POINTS, SOCIETY_LABELS, MAX_SCORES, APP_INFO, createAcrRows, fetchSavedAppraisal, loadAppraisalDocuments, loadSavedAppraisal, mergeFacultyInfo, saveAppraisalDraftSection, submitAppraisal, fetchReviewQueueForRole, loadReviewerDraft, saveReviewerDraft, submitWorkflowReview, INNOVATIVE_METHODS, SCORE_LIMITS, averageSectionScore, clampScore, clampReviewScore, courseFileAverageScore, courseFileRowScore, effectiveMaxScore, feedbackAverage, feedbackRowScore, feedbackSectionScore, innovativeSelectionsFromDetails, innovativeTeachingScore, isAllowedAttachmentFile, isValidDDMMYYYY, maskDateDDMMYYYY, normalizeAutoScores, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, reviewSectionScore, scoreRemaining, selfEffectivePartAMax, societyRowLocked, societyRowScore, sumSectionScore, toggleInnovativeMethod, validateCompleteRows, generateStandardReport, standardSubmittedScoreSummary, FORM_TYPES, formTypeForSchool, AppraisalHeaderImage, SummaryOtherInfoField, summaryOtherInfoValueFrom, RejectionNotice, DocCell, ViewCell, ViewDocsCell, RowButtons as RowBtns, SectionSaveFooter, SectionCard as SC, T, TH, TH_HOD, TH_DIR, TD, TDC, TDS, TDS_HOD, TDS_DIR, TDV, MyAppraisalSection } from "../features/faculty-appraisal";
+import { ACR_DETAIL_POINTS, SOCIETY_LABELS, MAX_SCORES, APP_INFO, createAcrRows, fetchSavedAppraisal, loadAppraisalDocuments, loadSavedAppraisal, mergeFacultyInfo, saveAppraisalDraftSection, submitAppraisal, fetchReviewQueueForRole, loadReviewerDraft, saveReviewerDraft, submitWorkflowReview, INNOVATIVE_METHODS, SCORE_LIMITS, averageSectionScore, clampScore, clampReviewScore, courseFileAverageScore, courseFileRowScore, effectiveMaxScore, feedbackAverage, feedbackRowScore, feedbackSectionScore, innovativeSelectionsFromDetails, innovativeTeachingScore, isAllowedAttachmentFile, isValidDDMMYYYY, maskDateDDMMYYYY, normalizeAutoScores, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, reviewSectionScore, rowHasReviewableData, scoreRemaining, selfEffectivePartAMax, societyRowLocked, societyRowScore, sumSectionScore, toggleInnovativeMethod, validateCompleteRows, generateStandardReport, standardSubmittedScoreSummary, FORM_TYPES, formTypeForSchool, AppraisalHeaderImage, SummaryOtherInfoField, summaryOtherInfoValueFrom, RejectionNotice, DocCell, ViewCell, ViewDocsCell, RowButtons as RowBtns, SectionSaveFooter, SectionCard as SC, T, TH, TH_HOD, TH_DIR, TD, TDC, TDS, TDS_HOD, TDS_DIR, TDV, MyAppraisalSection } from "../features/faculty-appraisal";
 import { canReviewerRejectProfile, rejectedStatusFor, reviewedStatusFor, profileFromsessionStorage, workflowValidationError, roleLabel, getSchoolKey, isAppraisalFinalisedByVc, isRejectedStatus, isPendingReviewStatusFor, hasActiveRejection, reviewListFrom } from "../utils/hierarchy";
 import { DesignArtsAuthorityReviewPanel } from "../components/appraisal/designArts/DesignArtsAppraisalForm";
 import { MediaCommAuthorityReviewPanel } from "../components/appraisal/mediaCommunication/MediaCommunicationAppraisalForm";
@@ -15,6 +15,20 @@ import { n, pct, grade, RO, TI } from "../features/faculty-appraisal/shared";
 const NON_ENGINEERING_REVIEW_SCHOOLS = new Set(["SoCM", "SoMCS", "SoD", "SoAA"]);
 const isNonEngineeringReviewSubject = (item = {}) =>
  NON_ENGINEERING_REVIEW_SCHOOLS.has(getSchoolKey(item.school || item.schoolName || item.info?.school || ""));
+const schoolCodeForSubject = (item = {}) =>
+ item.schoolCode || getSchoolKey(item.school || item.schoolName || item.info?.school || item.department || "");
+const formTypeForSubject = (item = {}) =>formTypeForSchool(schoolCodeForSubject(item)) || FORM_TYPES.DEFAULT;
+const docsCount = (docs = {}) =>{
+ if (!docs || typeof docs !== "object") return 0;
+ return Object.values(docs).reduce((total, value) =>{
+ if (Array.isArray(value)) return total + value.length;
+ return total + (value ? 1 : 0);
+ }, 0);
+};
+const scoreText = (value) =>{
+ const score = n(value);
+ return Number.isFinite(score) ? score.toFixed(1) : "0.0";
+};
 
 const REVIEW_ARRAY_KEYS = ["lectures", "courseFile", "projects", "quals", "feedback", "deptActs", "uniActs", "society", "industry", "acr", "journals", "books", "ict", "research", "projects2", "externalProjects", "patents", "awards", "confs", "proposals", "products", "fdps", "training"];
 const REVIEW_SECTION_MAX = { lectures: 50, courseFile: 20, projects: 10, quals: 10, feedback: 10, deptActs: 20, uniActs: 30, society: 10, industry: 5, acr: 25, journals: 120, books: 50, ict: 20, research: 30, projects2: SCORE_LIMITS.researchInternalProjects, externalProjects: SCORE_LIMITS.researchExternalProjects, patents: 40, awards: 10, confs: 30, proposals: 10, products: 10, fdps: 10, training: 10 };
@@ -99,6 +113,32 @@ const normalizeDirectorDraftData = (sectionScores = {}) =>{
  return next;
 };
 
+const STANDARD_ARRAY_SECTIONS = [
+ "lectures", "courseFile", "projects", "quals", "feedback", "deptActs", "uniActs",
+ "society", "industry", "acr", "journals", "books", "ict", "research", "projects2",
+ "externalProjects", "patents", "awards", "confs", "proposals", "products", "fdps", "training",
+];
+
+const asRows = (value) =>{
+ if (Array.isArray(value)) return value;
+ if (value && typeof value === "object") return [value];
+ return [];
+};
+
+const normalizeStandardReviewSubject = (subject = {}) =>{
+ const normalized = { ...subject };
+ STANDARD_ARRAY_SECTIONS.forEach((key) =>{
+ normalized[key] = asRows(normalized[key]);
+ });
+ normalized.docs = normalized.docs && typeof normalized.docs === "object" ? normalized.docs : {};
+ normalized.sectionApplicability = normalized.sectionApplicability && typeof normalized.sectionApplicability === "object" ? normalized.sectionApplicability : {};
+ normalized.info = mergeFacultyInfo(normalized.info, normalized);
+ normalized.innovRows = Array.isArray(normalized.innovRows) && normalized.innovRows.length
+ ? normalized.innovRows
+ : [{ method: normalized.innovDetails || "", details: normalized.innovDetails || "", score: normalized.innovScore || "" }];
+ return normalized;
+};
+
 // - Full Review Panel (opened when HOD clicks Review) -
 function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
  const [hodData, setHodData] = useState({});
@@ -136,7 +176,7 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
  const sumReviewRows = (section, field, max, rowMax) =>clampScore(
  (faculty[section] || []).reduce((total, row, index) =>{
  if (section === "society" && societyRowLocked(row)) return total;
- if (!rowHasReviewableData(row)) return total;
+ if (!rowHasReviewableData(section, row)) return total;
  const limit = typeof rowMax === "function" ? rowMax(row) : rowMax;
  return total + (limit ? clampScore(get(section, index, field), limit) : get(section, index, field));
  }, 0),
@@ -186,7 +226,7 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
  const sumReviewRows = (section, field, max, rowMax) =>clampScore(
  (faculty[section] || []).reduce((total, row, index) =>{
  if (section === "society" && societyRowLocked(row)) return total;
- if (!rowHasReviewableData(row)) return total;
+ if (!rowHasReviewableData(section, row)) return total;
  const limit = typeof rowMax === "function" ? rowMax(row) : rowMax;
  return total + (limit ? clampScore(getD(section, index, field), limit) : getD(section, index, field));
  }, 0),
@@ -637,7 +677,7 @@ export default function DirectorDashboard() {
  ...(item.patents || []).map(r =>n(r.score)),
  ].reduce((a, b) =>a + b, 0);
 
- const docCount = Object.values(item.docs || {}).reduce((a, arr) =>a + arr.length, 0);
+ const docCount = docsCount(item.docs);
 
  return (
 <div key={item.id} style={{ background: "#fff", borderRadius: 12, padding: "18px 20px", boxShadow: "0 1px 6px rgba(0,0,0,.07)", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -680,7 +720,7 @@ return (
 <div key={label} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
 <div style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.6 }}>{label}</div>
 <div style={{ fontSize: 15, fontWeight: 800, color, lineHeight: 1 }}>
- {val.toFixed ? val.toFixed(1) : val}{max &&<span style={{ fontSize: 9, color: "#94a3b8" }}>/{max}</span>}
+ {max ? scoreText(val) : val}{max &&<span style={{ fontSize: 9, color: "#94a3b8" }}>/{max}</span>}
 </div>
  {max &&<ScoreBar score={val} max={max} color={color} />}
  {!max &&<div style={{ fontSize: 9, color: "#94a3b8" }}>files uploaded</div>}
@@ -705,7 +745,7 @@ return (
  const docs = data?.payload?.docs || data?.docs || {};
  const mergedForm = preserveSavedReviewScores(form, item);
  const declaration = data?.declaration || item.declaration || null;
- const merged = { ...item, ...mergedForm, docs, declaration, status: declaration?.status || data?.status || item.status, workflowStatus: declaration?.status || data?.workflowStatus || item.workflowStatus };
+ const merged = normalizeStandardReviewSubject({ ...item, ...mergedForm, docs, declaration, status: declaration?.status || data?.status || item.status, workflowStatus: declaration?.status || data?.workflowStatus || item.workflowStatus });
  activeMainTab === "facultyApprovals" ? setReviewingFaculty(merged) : setReviewingHod(merged);
  } catch (err) {
  alert(`Unable to open submitted form.\n\n${err.message}`);
@@ -734,7 +774,7 @@ return (
 
  {/* REVIEW PANEL */}
  {activeMainTab === "facultyApprovals" && reviewingFaculty && (
- formTypeForSchool(getSchoolKey(reviewingFaculty.school)) === FORM_TYPES.MEDIA_COMM ? (
+ formTypeForSubject(reviewingFaculty) === FORM_TYPES.MEDIA_COMM ? (
 <MediaCommAuthorityReviewPanel
  person={reviewingFaculty}
  reviewerRole="director"
@@ -742,7 +782,7 @@ return (
  onSubmit={(id, scores, remarks, sectionScores, reviewConfirmed, decision) =>handleSubmitReview("faculty", id, scores, remarks, sectionScores, reviewConfirmed, decision)}
  readOnly={isDirectorReviewed(reviewingFaculty)}
  />
- ) : formTypeForSchool(getSchoolKey(reviewingFaculty.school)) === FORM_TYPES.DESIGN_ARTS ? (
+ ) : formTypeForSubject(reviewingFaculty) === FORM_TYPES.DESIGN_ARTS ? (
 <DesignArtsAuthorityReviewPanel
  person={reviewingFaculty}
  reviewerRole="director"
@@ -770,6 +810,7 @@ return (
 </DashboardLayout>
  );
 }
+
 
 
 
