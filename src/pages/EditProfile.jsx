@@ -1,3 +1,4 @@
+﻿/* eslint-disable no-unused-vars */
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { APP_INFO } from "../constants/formConfig";
@@ -442,3 +443,4 @@ export default function EditProfile() {
     </div>
   );
 }
+

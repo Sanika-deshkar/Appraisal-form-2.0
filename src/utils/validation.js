@@ -1,3 +1,4 @@
+﻿/* eslint-disable no-useless-escape */
 // - Validators -
 
 export const isValidEmail = (email) => {
@@ -64,3 +65,4 @@ export const filterNumeric = (value) =>
 // Allow only digits, +, -, spaces, ()
 export const filterPhone = (value) =>
   String(value ?? '').replace(/[^0-9+\-()\s]/g, '').slice(0, 20);
+

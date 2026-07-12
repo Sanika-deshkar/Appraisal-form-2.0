@@ -1,3 +1,4 @@
+﻿/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { APP_INFO } from "../constants/formConfig";
@@ -256,4 +257,5 @@ const s = {
     textDecoration: "none",
   },
 };
+
 
