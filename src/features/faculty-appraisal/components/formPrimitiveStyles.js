@@ -1,17 +1,57 @@
 export const tableStyles = {
-  T: { width: "100%", borderCollapse: "collapse", fontSize: 12 },
-  TH: { border: "1px solid #334155", padding: "7px 8px", background: "#1e293b", color: "#e2e8f0", fontWeight: 700, textAlign: "center", fontSize: 10, letterSpacing: "0.3px" },
-  TH_HOD: { border: "1px solid #334155", padding: "7px 8px", background: "#312e81", color: "#c7d2fe", fontWeight: 700, textAlign: "center", fontSize: 10, letterSpacing: "0.3px" },
-  TD: { border: "1px solid #e2e8f0", padding: "4px 6px", verticalAlign: "middle" },
+  T: {
+    width: "100%",
+    borderCollapse: "separate",
+    borderSpacing: 0,
+    fontSize: 13,
+    color: "#111827",
+    background: "#fff",
+    border: "1px solid #e5e7eb",
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  TH: {
+    border: "none",
+    borderBottom: "1px solid #e0e7ff",
+    padding: "10px 14px",
+    background: "linear-gradient(180deg, #f5f3ff 0%, #eef2ff 100%)",
+    color: "#312e81",
+    fontWeight: 800,
+    textAlign: "center",
+    fontSize: 12,
+    letterSpacing: 0,
+    height: 44,
+  },
+  TH_HOD: {
+    border: "none",
+    borderBottom: "1px solid #e0e7ff",
+    padding: "10px 14px",
+    background: "linear-gradient(180deg, #ede9fe 0%, #eef2ff 100%)",
+    color: "#3730a3",
+    fontWeight: 800,
+    textAlign: "center",
+    fontSize: 12,
+    letterSpacing: 0,
+    height: 44,
+  },
+  TD: {
+    border: "none",
+    borderBottom: "1px solid #e8ecf7",
+    padding: "7px 10px",
+    verticalAlign: "middle",
+    minHeight: 50,
+    background: "#fff",
+    color: "#111827",
+  },
 };
 
 tableStyles.TDC = { ...tableStyles.TD, textAlign: "center" };
-tableStyles.TDS = { ...tableStyles.TD, textAlign: "center", background: "#f8fafc", minWidth: 52 };
-tableStyles.TDS_HOD = { ...tableStyles.TDS, background: "#f0f4ff" };
-tableStyles.TH_DIR = { ...tableStyles.TH, background: "#065f46", color: "#6ee7b7" };
-tableStyles.TDS_DIR = { ...tableStyles.TDS, background: "#f0fdf4", minWidth: 62 };
-tableStyles.TH_DEAN = { ...tableStyles.TH, background: "#4c1d95", color: "#ddd6fe" };
-tableStyles.TDS_DEAN = { ...tableStyles.TDS, background: "#faf5ff", minWidth: 62 };
-tableStyles.TDV = { ...tableStyles.TD, background: "#fafbff", minWidth: 110 };
+tableStyles.TDS = { ...tableStyles.TD, textAlign: "center", background: "#f8fafc", minWidth: 68, fontWeight: 800, color: "#4338ca" };
+tableStyles.TDS_HOD = { ...tableStyles.TDS, background: "#eef2ff" };
+tableStyles.TH_DIR = { ...tableStyles.TH, background: "#ecfdf5", color: "#047857" };
+tableStyles.TDS_DIR = { ...tableStyles.TDS, background: "#f0fdf4", minWidth: 76, color: "#047857" };
+tableStyles.TH_DEAN = { ...tableStyles.TH, background: "#f5f3ff", color: "#6d28d9" };
+tableStyles.TDS_DEAN = { ...tableStyles.TDS, background: "#faf5ff", minWidth: 76, color: "#6d28d9" };
+tableStyles.TDV = { ...tableStyles.TD, background: "#fafbff", minWidth: 128 };
 
 export const { T, TH, TH_HOD, TH_DIR, TH_DEAN, TD, TDC, TDS, TDS_HOD, TDS_DIR, TDS_DEAN, TDV } = tableStyles;

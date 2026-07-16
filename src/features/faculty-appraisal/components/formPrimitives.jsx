@@ -2,24 +2,58 @@
 import { api } from "../../../services/api";
 import { isAllowedAttachmentFile } from "../../../utils/appraisalFormUtils";
 
-
-export function SectionCard({ title, subtitle, accent = "#6366f1", children }) {
+function PaperclipIcon() {
   return (
-    <div className="fa-section-card" style={{ background: "#fff", borderRadius: 10, boxShadow: "0 1px 4px rgba(15,23,42,0.07)", marginBottom: 14, overflow: "hidden", border: "1px solid #e8ecf0", borderTop: `3px solid ${accent}` }}>
-      <div style={{ padding: "10px 15px", borderBottom: "1px solid #f1f5f9" }}>
-        <div style={{ fontWeight: 700, fontSize: 13, color: accent }}>{title}</div>
-        {subtitle && <div style={{ color: "#64748b", fontSize: 11, marginTop: 2 }}>{subtitle}</div>}
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m21.4 11.6-8.5 8.5a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5" />
+    </svg>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+
+export function SectionCard({ title, subtitle, accent = "#6366f1", scoreBadge, children }) {
+  return (
+    <div className="fa-section-card appraisal-section-card" style={{ background: "#fff", borderRadius: 14, boxShadow: "0 18px 50px rgba(17,24,39,0.08)", marginBottom: 24, overflow: "hidden", border: "1px solid #e5e7eb", borderTop: `3px solid ${accent}` }}>
+      <div className="appraisal-part-header" style={{ padding: "18px 24px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, background: "linear-gradient(180deg,#ffffff 0%,#fbfbff 100%)" }}>
+        <div style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 12 }}>
+          <span className="appraisal-part-icon" style={{ width: 36, height: 36, borderRadius: 12, background: `${accent}14`, color: accent, border: `1px solid ${accent}2e`, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 3 3 7l9 4 9-4-9-4Z" />
+              <path d="M5 10v5c2 2 12 2 14 0v-5" />
+              <path d="M12 11v8" />
+            </svg>
+          </span>
+          <div>
+            <div className="appraisal-part-title" style={{ fontWeight: 800, fontSize: 18, color: accent, letterSpacing: 0 }}>{title}</div>
+            {subtitle && <div style={{ color: "#6b7280", fontSize: 13, marginTop: 4, lineHeight: 1.45 }}>{subtitle}</div>}
+          </div>
+        </div>
+        {scoreBadge && (
+          <div className="appraisal-part-score" style={{ display: "inline-flex", alignItems: "center", gap: 10, flexShrink: 0, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14, padding: "7px 10px 7px 12px", boxShadow: "0 8px 18px rgba(17,24,39,0.05)" }}>
+            <span style={{ color: "#6b7280", fontSize: 12, fontWeight: 800 }}>Total Score</span>
+            <span style={{ background: "#eef2ff", color: accent, borderRadius: 10, padding: "6px 11px", fontSize: 14, fontWeight: 900, whiteSpace: "nowrap" }}>{scoreBadge}</span>
+          </div>
+        )}
       </div>
-      <div style={{ padding: "13px 15px", display: "flex", flexDirection: "column" }}>{children}</div>
+      <div style={{ padding: "24px 28px 28px", display: "flex", flexDirection: "column", gap: 20 }}>{children}</div>
     </div>
   );
 }
 
 export function RowButtons({ onAdd, onDel, canDel = true, addLabel = "+ Add Row", deleteLabel = "- Delete Last" }) {
   return (
-    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-      <button type="button" style={{ padding: "6px 12px", background: "#10b981", color: "#fff", border: "none", borderRadius: 5, cursor: "pointer", fontSize: 11, fontWeight: 600 }} onClick={onAdd}>{addLabel}</button>
-      {canDel && <button type="button" style={{ padding: "6px 12px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 5, cursor: "pointer", fontSize: 11, fontWeight: 600 }} onClick={onDel}>{deleteLabel}</button>}
+    <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
+      <button type="button" className="appraisal-add-row-button" style={{ minHeight: 40, padding: "9px 16px", background: "#fff", color: "#5b5ceb", border: "1px solid #5b5ceb", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 800, fontFamily: "inherit" }} onClick={onAdd}>{addLabel}</button>
+      {canDel && <button type="button" className="appraisal-danger-button" style={{ minHeight: 40, padding: "9px 16px", background: "#fff", color: "#ef4444", border: "1px solid #fecaca", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 800, fontFamily: "inherit" }} onClick={onDel}>{deleteLabel}</button>}
     </div>
   );
 }
@@ -27,15 +61,15 @@ export function RowButtons({ onAdd, onDel, canDel = true, addLabel = "+ Add Row"
 export function SectionSaveFooter({ label, saved, saving, locked, onSave, variant = "inline" }) {
   const isCard = variant === "card";
   return (
-    <div style={isCard ? { background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" } : { marginTop: 18, paddingTop: 14, borderTop: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-      <span style={{ color: saved ? "#047857" : "#64748b", fontSize: 12, fontWeight: isCard ? 800 : 700 }}>
+    <div style={isCard ? { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, padding: 18, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap", boxShadow: "0 10px 24px rgba(17,24,39,0.06)" } : { marginTop: 22, paddingTop: 18, borderTop: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
+      <span style={{ color: saved ? "#047857" : "#6b7280", fontSize: 14, fontWeight: isCard ? 800 : 700 }}>
         {locked ? "Submitted and locked" : saved ? `${label} saved to server.` : `Save ${label} draft to server.`}
       </span>
       <button
         type="button"
         onClick={onSave}
         disabled={locked || saving}
-        style={{ padding: isCard ? "8px 12px" : "9px 22px", background: locked ? "#94a3b8" : "#2563eb", color: "#fff", border: "none", borderRadius: 7, cursor: locked || saving ? "not-allowed" : "pointer", fontWeight: 800, fontSize: 12, fontFamily: "inherit", opacity: saving ? 0.75 : 1 }}
+        style={{ minHeight: 40, padding: isCard ? "9px 16px" : "10px 24px", background: locked ? "#9ca3af" : "#5b5ceb", color: "#fff", border: "none", borderRadius: 10, cursor: locked || saving ? "not-allowed" : "pointer", fontWeight: 800, fontSize: 14, fontFamily: "inherit", opacity: saving ? 0.75 : 1, boxShadow: locked ? "none" : "0 10px 20px rgba(91,92,235,0.22)" }}
       >
         {saving ? "Saving..." : `Save ${label}`}
       </button>
@@ -97,18 +131,20 @@ export function DocCell({ id, docs, setDocs, readOnly = false }) {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 110 }}>
       {files.map((file, idx) => (
-        <div key={idx} style={{ display: "flex", alignItems: "center", gap: 4, background: "#f0f9ff", border: "1px solid #0ea5e9", borderRadius: 4, padding: "2px 6px" }}>
-          <span style={{ fontSize: 10, color: "#1e293b", flex: 1, overflow: "hidden", textOverflow: "ellipsis" }} title={file.name}>{file.name}</span>
-          {!readOnly && <button type="button" onClick={() => removeFile(idx)} style={{ background: "none", border: "none", color: "#dc2626", fontSize: 10, cursor: "pointer" }}>Remove</button>}
+        <div key={idx} style={{ display: "flex", alignItems: "center", gap: 6, background: "#ecfdf5", border: "1px solid #bbf7d0", borderRadius: 999, padding: "5px 8px" }}>
+          <span aria-hidden="true" style={{ color: "#22c55e", fontSize: 10, fontWeight: 900 }}>OK</span>
+          <span style={{ fontSize: 11, color: "#14532d", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 700 }} title={file.name}>{file.name}</span>
+          {!readOnly && <button type="button" onClick={() => removeFile(idx)} style={{ background: "none", border: "none", color: "#dc2626", fontSize: 11, cursor: "pointer", fontWeight: 800 }}>Remove</button>}
         </div>
       ))}
-      <div style={{ display: "flex", alignItems: "center", gap: 4, cursor: uploading || readOnly ? "not-allowed" : "pointer", padding: "4px 6px", border: "1px dashed #cbd5e1", borderRadius: 4, background: "#f8fafc", opacity: uploading || readOnly ? 0.7 : 1 }} onClick={() => !uploading && !readOnly && ref.current?.click()}>
-        <span style={{ fontSize: 10, color: "#64748b" }}>{uploading ? "Uploading..." : "Attach"}</span>
+      <div role="button" tabIndex={readOnly ? -1 : 0} aria-label="Attach supporting document" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, cursor: uploading || readOnly ? "not-allowed" : "pointer", minHeight: 40, padding: "8px 12px", border: "1px dashed #d1d5db", borderRadius: 10, background: "#fff", opacity: uploading || readOnly ? 0.7 : 1, color: "#4b5563", fontWeight: 800 }} onClick={() => !uploading && !readOnly && ref.current?.click()} onKeyDown={(event) => { if ((event.key === "Enter" || event.key === " ") && !uploading && !readOnly) ref.current?.click(); }}>
+        <PaperclipIcon />
+        <span style={{ fontSize: 13 }}>{uploading ? "Uploading..." : "Attach"}</span>
         <input ref={ref} type="file" multiple accept="image/*,.pdf,application/pdf" style={{ display: "none" }} disabled={uploading || readOnly} onChange={(event) => handleFiles(event.target.files)} />
       </div>
-      {uploadError && <span style={{ color: "#dc2626", fontSize: 9 }}>{uploadError}</span>}
+      {uploadError && <span role="alert" style={{ color: "#dc2626", fontSize: 11, fontWeight: 700 }}>{uploadError}</span>}
     </div>
   );
 }
@@ -126,18 +162,20 @@ export function ViewDocsCell({ docKey, docs, emptyText = "No docs", compact = fa
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: compact ? 2 : 3 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: compact ? 4 : 6, alignItems: compact ? "center" : "flex-start" }}>
       {files.map((file, idx) => (
         <a
           key={`${file.url || file.name || "doc"}-${idx}`}
           href={file.url}
           target="_blank"
           rel="noreferrer"
-          style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#3b82f6", fontSize: 10, textDecoration: "none", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 4, padding: "2px 7px", whiteSpace: "nowrap" }}
+          aria-label={`View ${file.name || "document"}`}
+          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, color: "#4338ca", fontSize: compact ? 0 : 12, textDecoration: "none", background: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: compact ? "50%" : 999, padding: compact ? 0 : "7px 10px", width: compact ? 36 : "auto", height: compact ? 36 : "auto", whiteSpace: "nowrap", fontWeight: 800 }}
           title={file.name}
         >
           {file.type?.startsWith("image/") && <img src={file.url} alt="" style={{ width: 22, height: 22, objectFit: "cover", borderRadius: 3 }} />}
-          View {file.name?.length > 16 ? `${file.name.slice(0, 16)}...` : file.name || "Document"}
+          <EyeIcon />
+          {!compact && <>View {file.name?.length > 16 ? `${file.name.slice(0, 16)}...` : file.name || "Document"}</>}
         </a>
       ))}
     </div>

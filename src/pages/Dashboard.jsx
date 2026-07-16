@@ -25,8 +25,8 @@ export default function Dashboard() {
       appInfo={APP_INFO}
       showLogoutModal={showLogoutModal}
       onCancelLogout={() => setShowLogoutModal(false)}
-      containerStyle={{ display: "flex", minHeight: "100vh", fontFamily: "inherit", background: "#f8fafc", color: "#1e293b" }}
-      mainStyle={{ flex: 1, padding: "24px 30px", display: "flex", flexDirection: "column", gap: 18, overflowX: "auto" }}
+      containerStyle={{ display: "flex", minHeight: "100vh", fontFamily: "inherit", background: "#f8fafc", color: "#111827" }}
+      mainStyle={{ flex: 1, padding: "40px", display: "flex", flexDirection: "column", gap: 24, overflowX: "auto", maxWidth: 1600, margin: "0 auto", width: "100%" }}
       sidebar={(
         <DashboardSidebar
           appInfo={APP_INFO}

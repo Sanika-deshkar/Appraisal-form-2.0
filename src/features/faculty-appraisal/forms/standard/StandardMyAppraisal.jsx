@@ -144,6 +144,59 @@ const defaultMentoringRows = () => [
 const evidenceClaimedOrScored = (row = {}) =>
   Boolean(String(row.score ?? "").trim()) || String(row.evidence ?? "").trim().toLowerCase() === "yes";
 
+function SubsectionIcon({ type }) {
+  const icons = {
+    teaching: ["M4 19V6.5A2.5 2.5 0 0 1 6.5 4H20v15H6.5A2.5 2.5 0 0 0 4 21V6.5", "M8 8h8M8 12h6"],
+    folder: ["M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"],
+    lightbulb: ["M9 18h6", "M10 22h4", "M8.5 14.5A6 6 0 1 1 15.5 14.5c-.9.7-1.5 1.7-1.5 2.5h-4c0-.8-.6-1.8-1.5-2.5Z"],
+    users: ["M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z", "M22 21v-2a4 4 0 0 0-3-3.87", "M16 3.13a4 4 0 0 1 0 7.75"],
+    guidance: ["M12 3 4 7l8 4 8-4-8-4Z", "M4 11l8 4 8-4", "M7 13v4c2.2 2 7.8 2 10 0v-4"],
+    mentoring: ["M7 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z", "M17 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z", "M2 21a5 5 0 0 1 10 0", "M14 21a4 4 0 0 1 8 0"],
+    award: ["M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z", "M9 14l-1 7 4-2 4 2-1-7"],
+    chart: ["M4 19V5", "M4 19h16", "M8 16v-5", "M12 16V8", "M16 16v-9"],
+    building: ["M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16", "M20 21v-9a2 2 0 0 0-2-2h-2", "M8 7h4M8 11h4M8 15h4"],
+    school: ["M3 21h18", "M5 21V8l7-5 7 5v13", "M9 21v-7h6v7", "M9 10h.01M15 10h.01"],
+    event: ["M7 2v4M17 2v4", "M3 8h18", "M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"],
+    outreach: ["M12 21s-7-4.4-9-9a5 5 0 0 1 9-4 5 5 0 0 1 9 4c-2 4.6-9 9-9 9Z"],
+    industry: ["M3 21h18", "M5 21V9l6 3V9l6 3v9", "M7 17h2M12 17h2M17 17h2"],
+    alumni: ["M12 3 22 8l-10 5L2 8l10-5Z", "M6 10v5c2 2 10 2 12 0v-5"],
+    placement: ["M10 6h4", "M6 21V8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13", "M8 21h8", "M9 11h6M9 15h6"],
+    journal: ["M4 19.5V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-1.5Z", "M8 7h6M8 11h8M8 15h5"],
+    book: ["M4 19.5V5a2 2 0 0 1 2-2h11a3 3 0 0 1 3 3v15H6a2 2 0 0 1-2-1.5Z", "M8 7h7M8 11h7M8 15h5"],
+    monitor: ["M3 5h18v12H3V5Z", "M8 21h8", "M12 17v4"],
+    research: ["M10 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z", "M21 21l-6-6", "M14 14l1-1"],
+    project: ["M4 7h16", "M4 12h16", "M4 17h10", "M6 5v14"],
+    obe: ["M4 5h16v14H4V5Z", "M8 9h8", "M8 13h5", "M16 16l2 2 3-4"],
+    fundedProject: ["M4 7h16v12H4V7Z", "M8 7V5h8v2", "M8 13h8", "M8 16h5"],
+    externalProject: ["M5 12h14", "M13 6l6 6-6 6", "M5 5v14"],
+    patent: ["M12 2l7 4v6c0 5-3 8-7 10-4-2-7-5-7-10V6l7-4Z", "M9 12l2 2 4-5"],
+    trophy: ["M8 21h8", "M12 17v4", "M7 4h10v5a5 5 0 0 1-10 0V4Z", "M5 6H3a3 3 0 0 0 3 3h1", "M19 6h2a3 3 0 0 1-3 3h-1"],
+    conference: ["M4 5h16v10H4V5Z", "M8 21h8", "M12 15v6"],
+    consultancy: ["M8 6h13", "M8 12h13", "M8 18h13", "M3 6h.01M3 12h.01M3 18h.01"],
+    startup: ["M12 2c3 2 5 5 5 9 0 4-5 11-5 11S7 15 7 11c0-4 2-7 5-9Z", "M12 9h.01"],
+    training: ["M3 7h18", "M5 7v12h14V7", "M9 11h6M9 15h4"],
+    workshop: ["M4 4h16v6H4V4Z", "M6 14h12", "M8 18h8", "M10 10v4", "M14 10v4"],
+    industrialTraining: ["M3 21h18", "M4 21V10l5 3v-3l5 3v-3l6 4v7", "M7 17h2M12 17h2M17 17h2"],
+  };
+  const paths = icons[type] || icons.project;
+  return (
+    <span className="appraisal-subsection-icon" aria-hidden="true">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        {paths.map((path) => <path key={path} d={path} />)}
+      </svg>
+    </span>
+  );
+}
+
+function SubsectionTitle({ icon, children }) {
+  return (
+    <div className="appraisal-subsection-title">
+      <SubsectionIcon type={icon} />
+      <span>{children}</span>
+    </div>
+  );
+}
+
 const partDParameters = [
   { parameter: "Self-motivation & Proactiveness", description: "List of activities/initiatives other than regular load/duties", max: 10 },
   { parameter: "Punctuality", description: "Late marks (office report), punctuality in lecture/practical, timely daily-report checking, absentee without intimation", max: 10 },
@@ -437,6 +490,7 @@ export default function StandardMyAppraisal({
     return { label: "Needs Improvement", color: "#ef4444" };
   };
   const g = gradeFunc();
+  const overallProgress = pct(grandTotal, effectiveGrandMax);
   const [submitting, setSubmitting] = useState(false);
   const [declarationConfirmed, setDeclarationConfirmed] = useState(false);
 
@@ -1001,14 +1055,14 @@ export default function StandardMyAppraisal({
   const workflowRejected = hasActiveRejection(workflowDeclaration, workflowReviews);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+    <div className="appraisal-form-shell" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {showSectionSelector && (
-      <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 9, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <div style={{ fontSize: 12, color: "#64748b", fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.6 }}>My Appraisal Section</div>
+      <div className="appraisal-section-selector" style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 20, padding: "16px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap", boxShadow: "0 12px 30px rgba(17,24,39,0.06)" }}>
+        <div style={{ fontSize: 13, color: "#6b7280", fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.6 }}>My Appraisal Section</div>
         <select
           value={hodAppraisalTab}
           onChange={(e) => handleMyAppraisalSectionChange(e.target.value)}
-          style={{ minWidth: 180, border: "1px solid #cbd5e1", borderRadius: 7, padding: "8px 10px", fontSize: 12, fontFamily: "inherit", color: "#0f172a", background: "#fff", outline: "none" }}
+          style={{ minWidth: 220, height: 44, border: "1px solid #e5e7eb", borderRadius: 12, padding: "0 14px", fontSize: 14, fontFamily: "inherit", color: "#111827", background: "#fff", outline: "none", fontWeight: 700 }}
         >
           <option value="partA">Part A</option>
           <option value="partB" disabled={!isMyAppraisalSectionOpen("partB")}>Part B</option>
@@ -1019,18 +1073,30 @@ export default function StandardMyAppraisal({
       </div>
       )}
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ background: "#fff", borderRadius: 9, padding: "16px 20px", boxShadow: "0 1px 3px rgba(0,0,0,.06)", marginBottom: 4, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+            <div className="appraisal-page-header" style={{ background: "#fff", borderRadius: 14, padding: "18px 28px", boxShadow: "0 10px 28px rgba(17,24,39,0.06)", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#0f172a" }}>My Appraisal Form</h2>
-                <p style={{ margin: "2px 0 0", fontSize: 12, color: "#64748b" }}>{info.name || titleNameFallback}{subtitleSeparator}{info.ay}</p>
+                <h2 style={{ margin: 0, fontSize: 30, fontWeight: 800, color: "#111827", letterSpacing: 0, lineHeight: 1.1 }}>My Appraisal Form</h2>
+                <p style={{ margin: "6px 0 0", fontSize: 14, color: "#6b7280", fontWeight: 600 }}>{info.name || titleNameFallback}{subtitleSeparator} {info.ay}</p>
               </div>
-              <AppraisalHeaderImage height={64} />
+              <AppraisalHeaderImage height={58} />
             </div>
-            <WorkflowStatusTracker
-              declaration={workflowDeclaration}
-              reviews={workflowReviews}
-              profile={profileFromsessionStorage()}
-            />
+            <div className="appraisal-status-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 344px", gap: 14, alignItems: "stretch" }}>
+              <WorkflowStatusTracker
+                declaration={workflowDeclaration}
+                reviews={workflowReviews}
+                profile={profileFromsessionStorage()}
+              />
+              <div className="appraisal-progress-card" style={{ background: "#fff", borderRadius: 14, padding: "18px 22px", boxShadow: "0 10px 28px rgba(17,24,39,0.06)", border: "1px solid #e5e7eb", display: "flex", flexDirection: "column", justifyContent: "center", gap: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+                  <div style={{ fontSize: 14, color: "#374151", fontWeight: 800 }}>Overall Progress</div>
+                  <div style={{ fontSize: 18, color: "#111827", fontWeight: 900 }}>{overallProgress}%</div>
+                </div>
+                <div aria-label={`Overall progress ${overallProgress}%`} style={{ height: 10, borderRadius: 999, background: "#e5e7eb", overflow: "hidden" }}>
+                  <div style={{ width: `${overallProgress}%`, height: "100%", borderRadius: 999, background: "linear-gradient(90deg,#5b5ceb,#7c3aed)", transition: "width 300ms ease" }} />
+                </div>
+                <div style={{ fontSize: 14, color: "#6b7280", fontWeight: 600 }}>{grandTotal.toFixed(1)} / {effectiveGrandMax} Marks</div>
+              </div>
+            </div>
             <RejectionNotice
               declaration={workflowDeclaration}
               reviews={workflowReviews}
@@ -1050,14 +1116,11 @@ export default function StandardMyAppraisal({
 
                 {/* Part A Tab */}
                 {hodAppraisalTab === "partA" && (
-                  <SC title={`Part A - Teaching & Learning (Max ${effectivePartAMax})`} accent="#6366f1">
-                    <div style={{ marginBottom: 14, padding: "8px 12px", background: "#f0f4ff", borderRadius: 6, fontSize: 12, color: "#312e81", fontWeight: 600 }}>
-                      Total Part A Score: {partATotal.toFixed(1)}/{effectivePartAMax}
-                    </div>
-                    <div style={{ fontSize: 11, color: "#64748b", marginBottom: 12 }}>Fill in your teaching and academic activities for the appraisal period. Enter scores for each item.</div>
+                  <SC title={`Part A - Teaching & Academic Activities (Max ${effectivePartAMax})`} accent="#5b5ceb" scoreBadge={`${partATotal.toFixed(1)} / ${effectivePartAMax}`}>
+                    <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 4, fontWeight: 600 }}>Fill in your teaching and academic activities for the appraisal period. Enter scores for each item.</div>
                     {/* A1. Teaching Process */}
                     <div style={{ marginBottom: 16, order: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>A1. Course Delivery & Classroom Engagement - Max 40 marks</div>
+                      <SubsectionTitle icon="teaching">A1. Course Delivery & Classroom Engagement - Max 40 marks</SubsectionTitle>
                       <table style={T}>
                         <thead>
                           <tr>
@@ -1095,7 +1158,7 @@ export default function StandardMyAppraisal({
 
                     {/* A2. Course File */}
                     <div style={{ marginBottom: 16, order: 2 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>A2. Course File & Curriculum Documentation - Max 20 marks</div>
+                      <SubsectionTitle icon="folder">A2. Course File & Curriculum Documentation - Max 20 marks</SubsectionTitle>
                       <table style={T}>
                         <thead>
                           <tr>
@@ -1134,7 +1197,7 @@ export default function StandardMyAppraisal({
 
                     {/* A3. Innovative Teaching */}
                     <div style={{ marginBottom: 16, order: 3 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>A3. Innovative Teaching-Learning Methods - Max 20 marks</div>
+                      <SubsectionTitle icon="lightbulb">A3. Innovative Teaching-Learning Methods - Max 20 marks</SubsectionTitle>
                       <table style={T}>
                         <thead><tr>
                           <th style={{ ...TH, width: 30 }}>SN</th>
@@ -1178,7 +1241,7 @@ export default function StandardMyAppraisal({
 
                     {/* A6. Student Project Guidance */}
                     <div style={{ marginBottom: 16, order: 6 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>A6. Student Project Guidance - Max 20 marks</div>
+                      <SubsectionTitle icon="guidance">A6. Student Project Guidance - Max 20 marks</SubsectionTitle>
                       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 10, fontSize: 12, fontWeight: 700, color: "#334155" }}>
                         {["applicable", "notApplicable"].map((value) => (
                           <label key={value} style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
@@ -1229,7 +1292,7 @@ export default function StandardMyAppraisal({
 
                     {/* A8. Qualifications */}
                     <div style={{ marginBottom: 16, order: 8 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>A8. Professional Development & Qualification Enhancement - Max 10 marks</div>
+                      <SubsectionTitle icon="award">A8. Professional Development & Qualification Enhancement - Max 10 marks</SubsectionTitle>
                       <table style={T}>
                         <thead>
                           <tr>
@@ -1261,7 +1324,7 @@ export default function StandardMyAppraisal({
 
                     {/* A4. Student Feedback */}
                     <div style={{ marginBottom: 16, order: 4 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>A4. Student Feedback Score - Max 10 marks</div>
+                      <SubsectionTitle icon="chart">A4. Student Feedback Score - Max 10 marks</SubsectionTitle>
                       <table style={T}>
                         <thead>
                           <tr>
@@ -1295,7 +1358,7 @@ export default function StandardMyAppraisal({
 
                     {/* A5. OBE Practice */}
                     <div style={{ marginBottom: 16, order: 5 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>A5. Learning Outcomes Attainment & OBE Practice - Max 20 marks</div>
+                      <SubsectionTitle icon="obe">A5. Learning Outcomes Attainment & OBE Practice - Max 20 marks</SubsectionTitle>
                       <table style={T}>
                         <thead>
                           <tr>
@@ -1329,7 +1392,7 @@ export default function StandardMyAppraisal({
 
                     {/* A7. Mentoring */}
                     <div style={{ marginBottom: 16, order: 7 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>A7. Student Mentoring & Counselling - Max 10 marks</div>
+                      <SubsectionTitle icon="mentoring">A7. Student Mentoring & Counselling - Max 10 marks</SubsectionTitle>
                       <table style={T}>
                         <thead>
                           <tr>
@@ -1365,13 +1428,13 @@ export default function StandardMyAppraisal({
 
                 {/* Part C Tab */}
                 {hodAppraisalTab === "partC" && (
-                  <SC title={`Part C - Administrative Role & University Development Contribution (Max ${PART_C_MAX})`} accent="#0f766e">
+                  <SC title={`Part C - Administrative Role & University Development Contribution (Max ${PART_C_MAX})`} accent="#0f766e" scoreBadge={`${partCTotal.toFixed(1)} / ${PART_C_MAX}`}>
                     <div style={{ marginBottom: 14, padding: "8px 12px", background: "#ccfbf1", borderRadius: 6, fontSize: 12, color: "#115e59", fontWeight: 600 }}>
                       Total Part C Score: {partCTotal.toFixed(1)}/{PART_C_MAX}
                     </div>
 
                     <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>C1. Administration at University Level - Max 50 marks</div>
+                      <SubsectionTitle icon="building">C1. Administration at University Level - Max 50 marks</SubsectionTitle>
                       <table style={T}>
                         <thead><tr>
                           <th style={{ ...TH, width: 30 }}>Sr. No.</th>
@@ -1404,7 +1467,7 @@ export default function StandardMyAppraisal({
                     </div>
 
                     <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>C2. Administration at School Level - Max 30 marks</div>
+                      <SubsectionTitle icon="school">C2. Administration at School Level - Max 30 marks</SubsectionTitle>
                       <table style={T}>
                         <thead><tr>
                           <th style={{ ...TH, width: 30 }}>Sr. No.</th>
@@ -1437,7 +1500,7 @@ export default function StandardMyAppraisal({
                     </div>
 
                     <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>C3. Event Organisation & Institutional Visibility - Max 20 marks</div>
+                      <SubsectionTitle icon="event">C3. Event Organisation & Institutional Visibility - Max 20 marks</SubsectionTitle>
                       <table style={T}>
                         <thead><tr>
                           <th style={{ ...TH, width: 30 }}>Sr. No.</th>
@@ -1472,7 +1535,7 @@ export default function StandardMyAppraisal({
                     </div>
 
                     <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>C4. Outreach, Extension & Social Responsibility - Max 20 marks</div>
+                      <SubsectionTitle icon="outreach">C4. Outreach, Extension & Social Responsibility - Max 20 marks</SubsectionTitle>
                       <div style={{ display: "flex", gap: 14, marginBottom: 10, fontSize: 12, fontWeight: 800, color: "#334155" }}>
                         {["applicable", "notApplicable"].map((v) => (
                           <label key={v} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -1518,7 +1581,7 @@ export default function StandardMyAppraisal({
                     </div>
 
                     <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>C5. Industry Interaction & Linkages - Max 8 marks</div>
+                      <SubsectionTitle icon="industry">C5. Industry Interaction & Linkages - Max 8 marks</SubsectionTitle>
                       <table style={T}>
                         <thead><tr>
                           <th style={{ ...TH, width: 30 }}>Sr. No.</th>
@@ -1551,7 +1614,7 @@ export default function StandardMyAppraisal({
                     </div>
 
                     <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>C6. Alumni Engagement & Networking - Max 10 marks</div>
+                      <SubsectionTitle icon="alumni">C6. Alumni Engagement & Networking - Max 10 marks</SubsectionTitle>
                       <table style={T}>
                         <thead><tr>
                           <th style={{ ...TH, width: 30 }}>Sr. No.</th>
@@ -1584,7 +1647,7 @@ export default function StandardMyAppraisal({
                     </div>
 
                     <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>C7. Student Placement Mentoring & Career Development - Max 20 marks</div>
+                      <SubsectionTitle icon="placement">C7. Student Placement Mentoring & Career Development - Max 20 marks</SubsectionTitle>
                       <table style={T}>
                         <thead><tr>
                           <th style={{ ...TH, width: 30 }}>Sr. No.</th>
@@ -1620,7 +1683,7 @@ export default function StandardMyAppraisal({
 
                 {/* Part D Tab */}
                 {hodAppraisalTab === "partD" && (
-                  <SC title={`Part D - Annual Confidential Report (Max ${PART_D_MAX})`} accent="#b45309">
+                  <SC title={`Part D - Annual Confidential Report (Max ${PART_D_MAX})`} accent="#b45309" scoreBadge={`${partDTotal.toFixed(1)} / ${PART_D_MAX}`}>
                     <div style={{ marginBottom: 14, padding: "8px 12px", background: "#fef3c7", borderRadius: 6, fontSize: 12, color: "#92400e", fontWeight: 600 }}>
                       Evaluated by HOD/Director only. This part has no faculty self-score input.
                     </div>
@@ -1651,7 +1714,7 @@ export default function StandardMyAppraisal({
 
                 {/* Part B Tab */}
                 {hodAppraisalTab === "partB" && (
-                  <SC title={`Part B - Research & Innovation (Max ${effectivePartBMax})`} accent="#7c3aed">
+                  <SC title={`Part B - Research & Innovation (Max ${effectivePartBMax})`} accent="#7c3aed" scoreBadge={`${partBTotal.toFixed(1)} / ${effectivePartBMax}`}>
                     <div style={{ marginBottom: 14, padding: "8px 12px", background: "#ede9fe", borderRadius: 6, fontSize: 12, color: "#6d28d9", fontWeight: 600 }}>
                       Total Part B Score: {partBTotal.toFixed(1)}/{effectivePartBMax}
                     </div>
@@ -1659,7 +1722,7 @@ export default function StandardMyAppraisal({
 
                     {/* B1. Journal Publications */}
                     <div style={{ marginBottom: 16, order: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B1. Journal Publications - Max 100 marks</div>
+                      <SubsectionTitle icon="journal">B1. Journal Publications - Max 100 marks</SubsectionTitle>
                       <table style={T}>
                         <thead>
                           <tr>
@@ -1697,7 +1760,7 @@ export default function StandardMyAppraisal({
 
                     {/* B2. Books / Chapters */}
                     <div style={{ marginBottom: 16, order: 2 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B2. Books, Book Chapters & Edited Volumes - Max 30 marks</div>
+                      <SubsectionTitle icon="book">B2. Books, Book Chapters & Edited Volumes - Max 30 marks</SubsectionTitle>
                       <table style={T}>
                         <thead>
                           <tr>
@@ -1739,7 +1802,7 @@ export default function StandardMyAppraisal({
 
                     {/* B11. ICT Content, MOOCs & E-Learning */}
                     <div style={{ marginBottom: 16, order: 11 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B11. ICT Content, MOOCs & E-Learning - Max 15 marks</div>
+                      <SubsectionTitle icon="monitor">B11. ICT Content, MOOCs & E-Learning - Max 15 marks</SubsectionTitle>
                       <table style={T}>
                         <thead>
                           <tr>
@@ -1777,7 +1840,7 @@ export default function StandardMyAppraisal({
 
                     {/* B5. Research Guidance */}
                     <div style={{ marginBottom: 16, order: 5 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B5. Research Guidance - Max 20 marks</div>
+                      <SubsectionTitle icon="research">B5. Research Guidance - Max 20 marks</SubsectionTitle>
                       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 10, fontSize: 12, fontWeight: 700, color: "#334155" }}>
                         {["applicable", "notApplicable"].map((value) => (
                           <label key={value} style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
@@ -1834,7 +1897,7 @@ export default function StandardMyAppraisal({
 
                     {/* B4. Funded Research Projects */}
                     <div style={{ marginBottom: 16, order: 4 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B4. Funded Research Projects - Max 40 marks</div>
+                      <SubsectionTitle icon="fundedProject">B4. Funded Research Projects - Max 40 marks</SubsectionTitle>
                       <table style={T}>
                         <thead>
                           <tr>
@@ -1876,7 +1939,7 @@ export default function StandardMyAppraisal({
 
                     {/* Legacy external projects retained only for old saved data */}
                     <div style={{ marginBottom: 16, display: "none" }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>Legacy External Research Projects - Not counted in AY 2026-2027 total</div>
+                      <SubsectionTitle icon="externalProject">Legacy External Research Projects - Not counted in AY 2026-2027 total</SubsectionTitle>
                       <table style={T}>
                         <thead>
                           <tr>
@@ -1918,7 +1981,7 @@ export default function StandardMyAppraisal({
 
                     {/* B3. Patents, Copyrights & IP and Product Development */}
                     <div style={{ marginBottom: 16, order: 3 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B3. Patents, Copyrights & IP and Product Development - Max 40 marks</div>
+                      <SubsectionTitle icon="patent">B3. Patents, Copyrights & IP and Product Development - Max 40 marks</SubsectionTitle>
                       <table style={T}>
                         <thead>
                           <tr>
@@ -1958,7 +2021,7 @@ export default function StandardMyAppraisal({
 
                     {/* B9. Awards */}
                     <div style={{ marginBottom: 16, order: 9 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B9. Research Awards, Fellowships & Citations - Max 20 marks</div>
+                      <SubsectionTitle icon="trophy">B9. Research Awards, Fellowships & Citations - Max 20 marks</SubsectionTitle>
                       <table style={T}>
                         <thead>
                           <tr>
@@ -1996,7 +2059,7 @@ export default function StandardMyAppraisal({
 
                     {/* B7. Conference / FDP Contributions - Organised */}
                     <div style={{ marginBottom: 16, order: 7 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B7. Conference / FDP Contributions - Organised - Max 20 marks</div>
+                      <SubsectionTitle icon="conference">B7. Conference / FDP Contributions - Organised - Max 20 marks</SubsectionTitle>
                       <table style={T}>
                         <thead>
                           <tr>
@@ -2034,7 +2097,7 @@ export default function StandardMyAppraisal({
 
                     {/* B6. Consultancy, Testing & Training */}
                     <div style={{ marginBottom: 16, order: 6 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B6. Consultancy, Testing & Training - Max 20 marks</div>
+                      <SubsectionTitle icon="consultancy">B6. Consultancy, Testing & Training - Max 20 marks</SubsectionTitle>
                       <table style={T}>
                         <thead>
                           <tr>
@@ -2072,7 +2135,7 @@ export default function StandardMyAppraisal({
 
                     {/* B10. Innovation, Start-ups & Technology Transfer */}
                     <div style={{ marginBottom: 16, order: 10 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B10. Innovation, Start-ups & Technology Transfer - Max 20 marks</div>
+                      <SubsectionTitle icon="startup">B10. Innovation, Start-ups & Technology Transfer - Max 20 marks</SubsectionTitle>
                       <table style={T}>
                         <thead>
                           <tr>
@@ -2106,7 +2169,7 @@ export default function StandardMyAppraisal({
 
                     {/* B8. FDP / Workshops Attended */}
                     <div style={{ marginBottom: 16, order: 8 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B8. Conference / FDP / Industry Training Attended - Max 20 marks</div>
+                      <SubsectionTitle icon="workshop">B8. Conference / FDP / Industry Training Attended - Max 20 marks</SubsectionTitle>
                       <table style={T}>
                         <thead>
                           <tr>
@@ -2138,7 +2201,7 @@ export default function StandardMyAppraisal({
 
                     {/* B8. Industrial Training */}
                     <div style={{ marginBottom: 16, order: 8 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B8(b). Industrial Training</div>
+                      <SubsectionTitle icon="industrialTraining">B8(b). Industrial Training</SubsectionTitle>
                       <table style={T}>
                         <thead>
                           <tr>

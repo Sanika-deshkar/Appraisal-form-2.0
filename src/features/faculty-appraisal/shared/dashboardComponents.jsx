@@ -7,7 +7,7 @@
  *
  * Import from here instead of redefining in each dashboard file.
  */
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { StatusBadge } from "../../../components/dashboard/dashboardPrimitives";
 import {
   getReviewChain,
@@ -54,6 +54,21 @@ export function TI({
   deferClampWhileTyping = false,
 }) {
   const [textErr, setTextErr] = useState(false);
+  const [showFullValue, setShowFullValue] = useState(false);
+  const [previewPosition, setPreviewPosition] = useState({ top: 0, left: 0 });
+  const inputRef = useRef(null);
+  const displayValue = String(val ?? "");
+  const canShowFullValue = displayValue.trim().length > 0;
+
+  const openFullValuePreview = () => {
+    if (!canShowFullValue || !inputRef.current) return;
+    const rect = inputRef.current.getBoundingClientRect();
+    setPreviewPosition({
+      top: rect.bottom + 8,
+      left: Math.min(rect.left, window.innerWidth - 360),
+    });
+    setShowFullValue(true);
+  };
 
   const handleChange = (e) => {
     if (readOnly) return;
@@ -93,28 +108,67 @@ export function TI({
   const baseStyle = {
     width: "100%",
     maxWidth: "100%",
-    height: 30,
+    height: 38,
     boxSizing: "border-box",
-    border: textErr ? "1.5px solid #ef4444" : "1px solid #d1d5db",
-    borderRadius: 4,
-    padding: "5px 6px",
-    fontSize: 11,
+    border: textErr ? "1.5px solid #ef4444" : "1.25px solid #d8deea",
+    borderRadius: 5,
+    padding: "8px 12px",
+    fontSize: 13,
     lineHeight: 1.25,
     fontFamily: "inherit",
     outline: "none",
+    background: readOnly ? "#f9fafb" : "#fcfdff",
+    color: "#111827",
+    fontWeight: numeric || center ? 700 : 500,
+    boxShadow: readOnly ? "none" : "inset 0 1px 0 rgba(17,24,39,0.03), 0 1px 2px rgba(17,24,39,0.04)",
   };
 
   return (
-    <div style={{ position: "relative", width: "100%" }}>
+    <div
+      className="appraisal-input-preview-wrap"
+      style={{ position: "relative", width: "100%" }}
+      onMouseEnter={openFullValuePreview}
+      onMouseLeave={() => setShowFullValue(false)}
+    >
       <input
+        ref={inputRef}
         value={val ?? ""}
         disabled={readOnly}
         onChange={handleChange}
         onBlur={handleBlur}
+        onFocus={openFullValuePreview}
+        onBlurCapture={() => setShowFullValue(false)}
         placeholder={placeholder || ""}
         inputMode={integer ? "numeric" : numeric ? "decimal" : undefined}
         style={center ? { ...baseStyle, textAlign: "center" } : baseStyle}
       />
+      {showFullValue && (
+        <div
+          role="tooltip"
+          style={{
+            position: "fixed",
+            zIndex: 9999,
+            top: previewPosition.top,
+            left: Math.max(12, previewPosition.left),
+            transform: "none",
+            width: "max-content",
+            maxWidth: 340,
+            minWidth: 220,
+            background: "#fff",
+            color: "#111827",
+            border: "1px solid #dbe3ff",
+            borderRadius: 8,
+            padding: "9px 11px",
+            fontSize: 12,
+            lineHeight: 1.45,
+            whiteSpace: "pre-wrap",
+            overflowWrap: "anywhere",
+            boxShadow: "0 16px 38px rgba(17,24,39,0.14)",
+          }}
+        >
+          {displayValue}
+        </div>
+      )}
       {textErr && (
         <span
           style={{
@@ -166,16 +220,22 @@ export function WorkflowStatusTracker({ declaration, reviews, profile }) {
   if (!declaration) {
     return (
       <div
+        className="appraisal-info-banner"
         style={{
           background: "#fff",
-          border: "1px solid #e2e8f0",
-          borderRadius: 9,
-          padding: "12px 14px",
-          fontSize: 12,
-          color: "#475569",
+          border: "1px solid #e5e7eb",
+          borderRadius: 14,
+          padding: "18px 24px",
+          fontSize: 13,
+          color: "#374151",
+          boxShadow: "0 12px 34px rgba(17,24,39,0.07)",
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
         }}
       >
-        Submit the appraisal to see the approval route and live authority status here.
+        <span aria-hidden="true" style={{ width: 38, height: 38, borderRadius: "50%", background: "#eef2ff", color: "#4338ca", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 900, flexShrink: 0, fontSize: 16 }}>i</span>
+        <span>Submit the appraisal to see the approval route and live authority status here.</span>
       </div>
     );
   }
@@ -199,10 +259,10 @@ export function WorkflowStatusTracker({ declaration, reviews, profile }) {
     <div
       style={{
         background: "#fff",
-        border: "1px solid #dbeafe",
-        borderRadius: 9,
-        padding: "14px 16px",
-        boxShadow: "0 1px 3px rgba(0,0,0,.05)",
+        border: "1px solid #e5e7eb",
+        borderRadius: 14,
+        padding: "20px 24px",
+        boxShadow: "0 12px 34px rgba(17,24,39,0.07)",
       }}
     >
       <div
@@ -215,7 +275,7 @@ export function WorkflowStatusTracker({ declaration, reviews, profile }) {
         }}
       >
         <div>
-          <div style={{ fontSize: 13, fontWeight: 800, color: "#0f172a" }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>
             Approval Status Tracker
           </div>
           <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
@@ -232,8 +292,8 @@ export function WorkflowStatusTracker({ declaration, reviews, profile }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: `repeat(${authoritySteps.length + 1}, minmax(130px, 1fr))`,
-          gap: 8,
+          gridTemplateColumns: `repeat(${authoritySteps.length + 1}, minmax(160px, 1fr))`,
+          gap: 12,
           overflowX: "auto",
         }}
       >
@@ -245,9 +305,9 @@ export function WorkflowStatusTracker({ declaration, reviews, profile }) {
               style={{
                 border: `1px solid ${colors.border}`,
                 background: colors.bg,
-                borderRadius: 8,
-                padding: "10px 11px",
-                minHeight: 88,
+                borderRadius: 16,
+                padding: "14px 15px",
+                minHeight: 98,
               }}
             >
               <div

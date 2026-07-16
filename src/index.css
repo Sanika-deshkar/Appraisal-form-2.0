@@ -545,3 +545,292 @@ div[style*="rgba(15,23,42,0.55)"] > div { animation: fa-scale-in 0.26s cubic-bez
 
 /* - Table Row - */
 tbody tr { transition: background-color 0.12s ease; }
+
+/* ====================================================
+   Faculty Appraisal 2.0 SaaS Redesign Layer
+   Visual-only polish for the feature-based appraisal form.
+   ==================================================== */
+
+:root {
+  --fa-bg: #f8fafc;
+  --fa-surface: #ffffff;
+  --fa-primary: #5b5ceb;
+  --fa-primary-dark: #4f46e5;
+  --fa-hover: #eef2ff;
+  --fa-border: #e5e7eb;
+  --fa-text: #111827;
+  --fa-text-secondary: #6b7280;
+  --fa-muted: #9ca3af;
+  --fa-success: #22c55e;
+  --fa-warning: #f59e0b;
+  --fa-error: #ef4444;
+}
+
+.appraisal-form-shell {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.appraisal-page-header,
+.appraisal-progress-card,
+.appraisal-info-banner,
+.appraisal-section-selector,
+.appraisal-section-card {
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+
+.appraisal-page-header:hover,
+.appraisal-progress-card:hover,
+.appraisal-section-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 22px 56px rgba(17, 24, 39, 0.10) !important;
+}
+
+.appraisal-form-shell table {
+  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.04);
+  border-radius: 4px !important;
+  overflow: hidden;
+}
+
+.appraisal-form-shell table th:first-child {
+  border-top-left-radius: 4px;
+}
+
+.appraisal-form-shell table th:last-child {
+  border-top-right-radius: 4px;
+}
+
+.appraisal-form-shell table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 4px;
+}
+
+.appraisal-form-shell table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 4px;
+}
+
+.appraisal-form-shell table th,
+.appraisal-form-shell table td {
+  border-right: 1px solid #e2e8f0 !important;
+}
+
+.appraisal-form-shell table th {
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.appraisal-form-shell table th:last-child,
+.appraisal-form-shell table td:last-child {
+  border-right: none !important;
+}
+
+.appraisal-form-shell table tbody tr:hover td {
+  background: #fff !important;
+}
+
+.appraisal-form-shell table tbody tr:has(td[colspan]) td {
+  background: #f1efff !important;
+  color: #4338ca !important;
+  font-weight: 900 !important;
+}
+
+.appraisal-subsection-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+  margin: 4px 0 10px;
+}
+
+.appraisal-page-header h2 {
+  font-size: 28px !important;
+  line-height: 1.12 !important;
+}
+
+.appraisal-part-title {
+  font-size: 18px !important;
+  line-height: 1.25 !important;
+}
+
+.appraisal-part-header {
+  min-height: 78px;
+}
+
+.appraisal-part-icon {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.appraisal-form-shell table th {
+  font-size: 11.5px !important;
+  line-height: 1.25 !important;
+}
+
+.appraisal-subsection-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
+  color: #5b5ceb;
+  background: linear-gradient(135deg, rgba(91, 92, 235, 0.16), rgba(124, 58, 237, 0.08));
+  border: 1px solid #ddd6fe;
+}
+
+.appraisal-subsection-title:hover .appraisal-subsection-icon {
+  background: #5b5ceb;
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(91, 92, 235, 0.24);
+}
+
+.appraisal-form-shell input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.appraisal-form-shell select,
+.appraisal-form-shell textarea {
+  min-height: 38px;
+  border-radius: 5px !important;
+  border-color: #d8deea !important;
+  color: var(--fa-text) !important;
+  font-size: 14px !important;
+  background-color: #fcfdff !important;
+  box-shadow: inset 0 1px 0 rgba(17, 24, 39, 0.03), 0 1px 2px rgba(17, 24, 39, 0.04);
+}
+
+.appraisal-form-shell input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+.appraisal-form-shell select:focus,
+.appraisal-form-shell textarea:focus {
+  background: #ffffff !important;
+  border-color: #5b5ceb !important;
+  box-shadow: 0 0 0 4px rgba(91, 92, 235, 0.14), 0 8px 18px rgba(17, 24, 39, 0.08) !important;
+}
+
+.appraisal-form-shell table td:has(input),
+.appraisal-form-shell table td:has(select),
+.appraisal-form-shell table td:has(textarea) {
+  background: #fbfcff !important;
+}
+
+.appraisal-form-shell input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not(:placeholder-shown),
+.appraisal-form-shell textarea:not(:placeholder-shown) {
+  border-color: #c7d2fe !important;
+  background: #fdfdff !important;
+}
+
+.appraisal-input-preview-wrap::after {
+  content: "";
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  width: 16px;
+  height: 18px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(253,253,255,0), #fcfdff 55%);
+  opacity: 0;
+  transform: translateY(-50%);
+  transition: opacity 160ms ease;
+  pointer-events: none;
+}
+
+.appraisal-input-preview-wrap:has(input:not(:placeholder-shown))::after {
+  opacity: 1;
+}
+
+.appraisal-input-preview-wrap:hover::after,
+.appraisal-input-preview-wrap:focus-within::after {
+  opacity: 0;
+}
+
+.appraisal-form-shell input::placeholder,
+.appraisal-form-shell textarea::placeholder {
+  color: var(--fa-muted);
+}
+
+.appraisal-add-row-button:hover {
+  background: var(--fa-primary) !important;
+  color: #fff !important;
+  box-shadow: 0 10px 22px rgba(91, 92, 235, 0.24) !important;
+  transform: translateY(-1px) scale(1.02) !important;
+}
+
+.appraisal-danger-button:hover {
+  background: var(--fa-error) !important;
+  color: #fff !important;
+  border-color: var(--fa-error) !important;
+}
+
+.appraisal-sidebar button:hover:not(.is-active) {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+.appraisal-sidebar a:focus-visible,
+.appraisal-sidebar button:focus-visible,
+.appraisal-form-shell button:focus-visible,
+.appraisal-form-shell a:focus-visible,
+.appraisal-form-shell select:focus-visible,
+.appraisal-form-shell input:focus-visible,
+.appraisal-form-shell textarea:focus-visible {
+  outline: 3px solid rgba(91, 92, 235, 0.34) !important;
+  outline-offset: 2px;
+}
+
+@media (max-width: 1180px) {
+  .appraisal-status-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 900px) {
+  main {
+    padding: 24px !important;
+  }
+
+  .appraisal-page-header {
+    align-items: flex-start !important;
+    flex-direction: column;
+  }
+
+  .appraisal-page-header h2 {
+    font-size: 26px !important;
+  }
+
+  .appraisal-form-shell table {
+    min-width: 920px;
+  }
+
+  .appraisal-section-card > div {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  main {
+    padding: 18px !important;
+  }
+
+  .appraisal-page-header h2 {
+    font-size: 23px !important;
+  }
+
+  .appraisal-part-title {
+    font-size: 16px !important;
+  }
+
+  .appraisal-part-header {
+    align-items: flex-start !important;
+    flex-direction: column;
+  }
+
+  .appraisal-part-score {
+    align-self: flex-start;
+  }
+
+  .appraisal-progress-card,
+  .appraisal-info-banner,
+  .appraisal-section-selector {
+    border-radius: 16px !important;
+  }
+}
