@@ -1,18 +1,20 @@
 import axios from "axios";
+// https://faculty-appraisal-java-backend-376777978967.asia-south1.run.app
+// https://faculty-appraisal-git-376777978967.asia-south1.run.app
+const DEFAULT_API_BASE_URL =
+  "https://faculty-appraisal-python-919405994318.asia-south1.run.app/api/v1";
 
-const rawBaseUrl = String(import.meta.env.VITE_API_BASE_URL || "")
-  .trim()
-  .replace(/\/$/, "");
+const rawBaseUrl = (
+  import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL
+).replace(/\/$/, "");
 
 // Force https for non-localhost URLs to prevent mixed-content blocks
-export const API_BASE_URL = rawBaseUrl
-  ? /^http:\/\/(?!localhost)/.test(rawBaseUrl)
-    ? rawBaseUrl.replace(/^http:\/\//, "https://")
-    : rawBaseUrl
-  : "";
+export const API_BASE_URL = /^http:\/\/(?!localhost)/.test(rawBaseUrl)
+  ? rawBaseUrl.replace(/^http:\/\//, "https://")
+  : rawBaseUrl;
 
 export const apiClient = axios.create({
-  baseURL: API_BASE_URL || undefined,
+  baseURL: API_BASE_URL,
   timeout: 30000,
 });
 
@@ -95,13 +97,10 @@ export const createFormData = (fields = {}, file) => {
   return formData;
 };
 
-const FACULTY_APPRAISAL_STORAGE_PREFIX = "facultyAppraisal";
-const getFacultyStorageKey = (key) => `${FACULTY_APPRAISAL_STORAGE_PREFIX}:${key}`;
-
 export const fetchFormData = async () => {
-  return JSON.parse(sessionStorage.getItem(getFacultyStorageKey("formData"))) || {};
+  return JSON.parse(sessionStorage.getItem("formData")) || {};
 };
 
 export const saveFormData = async (data) => {
-  sessionStorage.setItem(getFacultyStorageKey("formData"), JSON.stringify(data));
+  sessionStorage.setItem("formData", JSON.stringify(data));
 };

@@ -114,7 +114,7 @@ export const emptyMediaForm = () =>({
  qual: sessionStorage.getItem("qualification") || "",
  desig: sessionStorage.getItem("designation") || "",
  experience: sessionStorage.getItem("experience") || "",
- ay: sessionStorage.getItem("facultyAppraisal:academicYear") || APP_INFO.DEFAULT_AY,
+ ay: sessionStorage.getItem("academicYear") || APP_INFO.DEFAULT_AY,
  school: sessionStorage.getItem("school") || "SoMCS - School of Media & Communication Studies",
  },
  lectures: [{ sem: "", code: "", planned: "", conducted: "", score: "" }],

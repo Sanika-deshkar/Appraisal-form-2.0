@@ -3,11 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { APP_INFO } from "../../constants/formConfig";
 import { LogoutConfirmModal } from "./dashboardPrimitives";
 
-const FACULTY_APPRAISAL_STORAGE_PREFIX = "facultyAppraisal";
-const getFacultyStorageKey = (key) => `${FACULTY_APPRAISAL_STORAGE_PREFIX}:${key}`;
-
 const readAcademicYearOptions = () => {
-  const storedAcademicYear = sessionStorage.getItem(getFacultyStorageKey("academicYear")) || APP_INFO.DEFAULT_AY;
+  const storedAcademicYear = sessionStorage.getItem("academicYear") || APP_INFO.DEFAULT_AY;
   const options = [];
   const seen = new Set();
 
@@ -20,8 +17,11 @@ const readAcademicYearOptions = () => {
     options.push(academicYear);
   };
 
+  addOption("2025-2026");
+  addOption("2026-2027");
+
   try {
-    const parsedCycles = JSON.parse(sessionStorage.getItem(getFacultyStorageKey("availableCycles")) || "[]");
+    const parsedCycles = JSON.parse(sessionStorage.getItem("availableCycles") || "[]");
     if (Array.isArray(parsedCycles)) {
       parsedCycles.forEach((cycle) => {
         const academicYear = typeof cycle === "string" ? cycle : cycle?.academic_year || cycle?.year;
@@ -63,7 +63,7 @@ export default function DashboardLayout({
 
   const handleAcademicYearChange = (event) => {
     const nextAcademicYear = event.target.value;
-    sessionStorage.setItem(getFacultyStorageKey("academicYear"), nextAcademicYear);
+    sessionStorage.setItem("academicYear", nextAcademicYear);
     setAcademicYearState({ selectedAcademicYear: nextAcademicYear, options: academicYearState.options.includes(nextAcademicYear) ? academicYearState.options : [nextAcademicYear, ...academicYearState.options] });
     window.dispatchEvent(new CustomEvent("academicYearChanged", { detail: { academicYear: nextAcademicYear } }));
   };
