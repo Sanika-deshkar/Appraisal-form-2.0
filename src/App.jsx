@@ -5,6 +5,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { normalizeRole, storeUserSession } from "./auth/session";
 import { APP_INFO } from "./constants/formConfig";
 import { getMe } from "./services/authService";
+import { api } from "./services/api";
 
 const Login        = lazy(() => import("./pages/Login"));
 const Signup       = lazy(() => import("./pages/Signup"));
@@ -35,6 +36,29 @@ function ProfileLoader() {
         const profile = await getMe();
         if (cancelled) return;
         storeUserSession({ profile });
+
+        const storedAcademicYear = sessionStorage.getItem("academicYear");
+        let ay = storedAcademicYear || APP_INFO.DEFAULT_AY;
+        let cycles = [];
+
+        try {
+          const cyclesData = await api.get("/appraisal/cycles");
+          if (Array.isArray(cyclesData)) {
+            cycles = cyclesData;
+            const matchingCycle = cyclesData.find((cycle) => cycle.academic_year === storedAcademicYear);
+            const openCycle = cyclesData.find((cycle) => cycle.is_open);
+            const fallbackCycle = matchingCycle || openCycle || cyclesData[0];
+            if (fallbackCycle) {
+              ay = fallbackCycle.academic_year;
+            }
+          }
+        } catch (error) {
+          console.error("Could not load academic year cycles, falling back to default:", error);
+        }
+
+        sessionStorage.setItem("academicYear", ay);
+        sessionStorage.setItem("availableCycles", JSON.stringify(cycles));
+
         const role = normalizeRole(profile.appraisal_role || profile.role, "faculty");
         const name = profile.full_name || "";
         setUser({
@@ -48,7 +72,8 @@ function ProfileLoader() {
           experience: profile.teaching_experience || "",
           phone: profile.phone || "",
           avatar: name.trim().split(/\s+/).map(n => n[0]).join("").substring(0, 2).toUpperCase() || "U",
-          ay: APP_INFO.DEFAULT_AY,
+          ay,
+          cycles,
         });
       } catch {
         if (!cancelled) setError("Unable to load profile. Please log in again.");

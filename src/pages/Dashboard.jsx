@@ -7,6 +7,7 @@ export default function Dashboard() {
   const [activeMainTab, setActiveMainTab] = useState("myAppraisal");
   const [appraisalSection, setAppraisalSection] = useState("partA");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const storedAcademicYear = sessionStorage.getItem("academicYear") || APP_INFO.DEFAULT_AY;
 
   const navItems = [
     { id: "myAppraisal", icon: "", label: "My Appraisal", sub: "View your self-appraisal form" },
@@ -45,6 +46,7 @@ export default function Dashboard() {
         <MyAppraisalSection
           sectionTab={appraisalSection}
           onSectionTabChange={handleSectionChange}
+          defaultAcademicYear={storedAcademicYear}
         />
       )}
     </DashboardLayout>

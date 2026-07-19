@@ -210,7 +210,7 @@ export default function StandardMyAppraisal({
   onSectionTabChange,
   showSectionSelector = false,
   defaultDesignation = sessionStorage.getItem("designation") || "",
-  defaultAcademicYear = "2026-2027",
+  defaultAcademicYear = sessionStorage.getItem("academicYear") || APP_INFO.DEFAULT_AY,
   titleNameFallback = "Faculty",
   subtitleSeparator = ".",
 } = {}) {
@@ -218,6 +218,21 @@ export default function StandardMyAppraisal({
   const [localAppraisalTab, setLocalAppraisalTab] = useState("partA");
   const hodAppraisalTab = sectionTab || localAppraisalTab;
   const setHodAppraisalTab = onSectionTabChange || setLocalAppraisalTab;
+  const resolvedAcademicYear = defaultAcademicYear || sessionStorage.getItem("academicYear") || APP_INFO.DEFAULT_AY;
+
+  useEffect(() => {
+    const syncAcademicYear = (event) => {
+      const nextAcademicYear = event?.detail?.academicYear || sessionStorage.getItem("academicYear") || APP_INFO.DEFAULT_AY;
+      setInfo((previousInfo) => ({ ...previousInfo, ay: nextAcademicYear }));
+    };
+
+    window.addEventListener("academicYearChanged", syncAcademicYear);
+    return () => window.removeEventListener("academicYearChanged", syncAcademicYear);
+  }, []);
+
+  useEffect(() => {
+    setInfo((previousInfo) => ({ ...previousInfo, ay: resolvedAcademicYear }));
+  }, [resolvedAcademicYear]);
 
   // -- HOD's own appraisal form state --
   const [info, setInfo] = useState({
@@ -229,7 +244,7 @@ export default function StandardMyAppraisal({
     expDyp: "",
     expPrev: "",
     expTotal: "",
-    ay: defaultAcademicYear
+    ay: resolvedAcademicYear
   });
   const inf = (k) => (v) => setInfo((p) => ({ ...p, [k]: v }));
 
