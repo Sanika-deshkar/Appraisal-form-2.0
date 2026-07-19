@@ -2,16 +2,13 @@ import axios from "axios";
 // https://faculty-appraisal-java-backend-376777978967.asia-south1.run.app
 // https://faculty-appraisal-git-376777978967.asia-south1.run.app
 const DEFAULT_API_BASE_URL =
-  "https://faculty-appraisal-python-919405994318.asia-south1.run.app/api/v1";
+  "http://150.129.156.37:8000/api/v1";
 
 const rawBaseUrl = (
   import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL
 ).replace(/\/$/, "");
 
-// Force https for non-localhost URLs to prevent mixed-content blocks
-export const API_BASE_URL = /^http:\/\/(?!localhost)/.test(rawBaseUrl)
-  ? rawBaseUrl.replace(/^http:\/\//, "https://")
-  : rawBaseUrl;
+export const API_BASE_URL = rawBaseUrl;
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
