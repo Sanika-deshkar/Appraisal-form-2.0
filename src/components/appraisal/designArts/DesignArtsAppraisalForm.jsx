@@ -134,7 +134,7 @@ export const emptyDesignArtsForm = () =>({
  qual: sessionStorage.getItem("qualification") || "",
  desig: sessionStorage.getItem("designation") || "",
  experience: sessionStorage.getItem("experience") || "",
- ay: sessionStorage.getItem("academicYear") || APP_INFO.DEFAULT_AY,
+ ay: sessionStorage.getItem("facultyAppraisal:academicYear") || APP_INFO.DEFAULT_AY,
  school: sessionStorage.getItem("school") || sessionStorage.getItem("schoolName") || "",
  },
  lectures: [{ sem: "", code: "", planned: "", conducted: "", score: "", _id: uid() }],
