@@ -17,15 +17,17 @@ const readAcademicYearOptions = () => {
     options.push(academicYear);
   };
 
-  addOption("2025-2026");
-  addOption("2026-2027");
+  const normalizeCycleValue = (cycle) => {
+    if (!cycle) return "";
+    if (typeof cycle === "string") return cycle;
+    return cycle?.academic_year || cycle?.academicYear || cycle?.year || cycle?.year_label || "";
+  };
 
   try {
     const parsedCycles = JSON.parse(sessionStorage.getItem("availableCycles") || "[]");
     if (Array.isArray(parsedCycles)) {
       parsedCycles.forEach((cycle) => {
-        const academicYear = typeof cycle === "string" ? cycle : cycle?.academic_year || cycle?.year;
-        addOption(academicYear);
+        addOption(normalizeCycleValue(cycle));
       });
     }
   } catch {

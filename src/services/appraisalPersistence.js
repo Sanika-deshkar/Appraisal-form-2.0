@@ -83,6 +83,80 @@ const normalizeDocsMap = (docs = {}) =>
  Object.entries(docs || {}).map(([key, files]) =>[key, filesForDocValue(files)]),
  );
 
+const defaultAcrRows = () =>[
+ { label: "Self-motivation & Proactiveness" },
+ { label: "Punctuality" },
+ { label: "Target-based Work" },
+ { label: "Effectiveness" },
+ { label: "Obedience" },
+];
+
+const resetSnapshotSetters = (academicYear, setters) =>{
+ setters.setInfo?.({
+  name: sessionStorage.getItem("name") || "",
+  qual: sessionStorage.getItem("qualification") || "",
+  desig: sessionStorage.getItem("designation") || "",
+  school: sessionStorage.getItem("school") || sessionStorage.getItem("department") || "",
+  experience: sessionStorage.getItem("experience") || "",
+  expDyp: "",
+  expPrev: "",
+  expTotal: "",
+  ay: academicYear,
+ });
+ setters.setLectures?.([{ sem: "", code: "", planned: "", conducted: "", score: "", hod: "", director: "" }]);
+ setters.setCourseFile?.([{ course: "", title: "", details: "", score: "", hod: "", director: "" }]);
+ setters.setInnovRows?.([{ method: "", details: "", score: "" }]);
+ setters.setInnovDetails?.("");
+ setters.setInnovScore?.("");
+ setters.setInnovHod?.("");
+ setters.setInnovDirector?.("");
+ setters.setInnovDean?.("");
+ setters.setInnovVc?.("");
+ setters.setProjects?.([{ label: "", score: "", hod: "", director: "" }]);
+ setters.setObeRows?.([
+  { component: "CO-PO mapping sheet", evidence: "", score: "", max: 5 },
+  { component: "Attainment calculation", evidence: "", score: "", max: 10 },
+  { component: "Corrective action plan", evidence: "", score: "", max: 5 },
+ ]);
+ setters.setMentoringRows?.([
+  { activity: "Mentoring meetings conducted (min. 2/semester)", evidence: "", score: "", max: 4 },
+  { activity: "Mentoring register maintained", evidence: "", score: "", max: 3 },
+  { activity: "Documented academic/career counselling outcomes", evidence: "", score: "", max: 3 },
+ ]);
+ setters.setQuals?.([{ label: "", score: "", hod: "", director: "" }]);
+ setters.setFeedback?.([{ code: "", fb1: "", fb2: "", score: "", hod: "", director: "" }]);
+ setters.setDeptActs?.([{ activity: "", nature: "", period: "", score: "", hod: "", director: "" }]);
+ setters.setUniActs?.([{ activity: "", nature: "", period: "", score: "", hod: "", director: "" }]);
+ setters.setEventRows?.([{ event: "", role: "", date: "", level: "", score: "" }]);
+ setters.setSociety?.([{ label: "", details: "", date: "", score: "", hod: "", director: "" }]);
+ setters.setIndustry?.([{ activity: "", partner: "", date: "", name: "", details: "", score: "", hod: "", director: "" }]);
+ setters.setAlumniRows?.([{ activity: "", details: "", date: "", score: "" }]);
+ setters.setPlacementRows?.([{ activityType: "", name: "", date: "", score: "" }]);
+ setters.setAcr?.(defaultAcrRows());
+ setters.setJournals?.([{ title: "", journal: "", issn: "", index: "", score: "", hod: "", director: "" }]);
+ setters.setPopularWritings?.([{ title: "", media: "", date: "", url: "", score: "", hod: "", director: "" }]);
+ setters.setBooks?.([{ title: "", book: "", issn: "", pub: "", coauth: "", first: "", score: "", hod: "", director: "" }]);
+ setters.setIct?.([{ title: "", desc: "", type: "", quad: "", score: "", hod: "", director: "" }]);
+ setters.setResearch?.([{ degree: "", name: "", thesis: "", score: "", hod: "", director: "" }]);
+ setters.setProjects2?.([{ title: "", agency: "", date: "", amount: "", role: "", status: "", score: "", hod: "" }]);
+ setters.setInternalProjects?.([{ title: "", agency: "", date: "", amount: "", role: "", status: "", score: "", hod: "" }]);
+ setters.setExternalProjects?.([{ title: "", agency: "", date: "", amount: "", role: "", status: "", score: "", hod: "" }]);
+ setters.setIpr?.([{ title: "", type: "", date: "", status: "", fileNo: "", score: "", hod: "", director: "" }]);
+ setters.setPatents?.([{ title: "", type: "", date: "", status: "", fileNo: "", score: "", hod: "", director: "" }]);
+ setters.setAwards?.([{ title: "", date: "", agency: "", level: "", score: "", hod: "", director: "" }]);
+ setters.setConfs?.([{ title: "", type: "", org: "", level: "", score: "", hod: "", director: "" }]);
+ setters.setConsultancyRows?.([{ title: "", agency: "", date: "", amount: "", role: "", status: "", score: "", hod: "" }]);
+ setters.setStartupRows?.([{ title: "", status: "", details: "", score: "", hod: "", director: "" }]);
+ setters.setProposals?.([{ title: "", duration: "", agency: "", amount: "", score: "", hod: "", director: "" }]);
+ setters.setProducts?.([{ details: "", usage: "", score: "", hod: "", director: "" }]);
+ setters.setFdps?.([{ program: "", duration: "", org: "", score: "", hod: "", director: "" }]);
+ setters.setTraining?.([{ company: "", duration: "", nature: "", score: "", hod: "", director: "" }]);
+ setters.setDocs?.({});
+ setters.setSummaryOtherInfo?.("");
+ setters.setSectionApplicability?.({ projects: "applicable", research: "applicable", society: "applicable" });
+ setters.setSectionSaveStatus?.({ partA: false, partB: false, partC: false, partD: false });
+};
+
 export const loadAppraisalSnapshot = async ({ facultyEmail, academicYear }) =>{
  if (!facultyEmail || !academicYear) return null;
  try {
@@ -175,6 +249,8 @@ export const loadSavedAppraisal = async ({ facultyEmail, academicYear, setters }
  const snapshotPayload = await loadAppraisalSnapshot({ facultyEmail, academicYear });
  if (snapshotPayload) {
  applySnapshotToSetters(snapshotPayload, setters);
+ } else {
+ resetSnapshotSetters(academicYear, setters);
  }
 };
 

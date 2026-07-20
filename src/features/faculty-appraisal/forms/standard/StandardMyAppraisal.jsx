@@ -234,6 +234,16 @@ export default function StandardMyAppraisal({
     setInfo((previousInfo) => ({ ...previousInfo, ay: resolvedAcademicYear }));
   }, [resolvedAcademicYear]);
 
+  const [availableCyclesState, setAvailableCyclesState] = useState(() => normalizeAcademicYearCycles(JSON.parse(sessionStorage.getItem("availableCycles") || "[]")));
+
+  useEffect(() => {
+    const syncAvailableCycles = () => {
+      setAvailableCyclesState(normalizeAcademicYearCycles(JSON.parse(sessionStorage.getItem("availableCycles") || "[]")));
+    };
+    window.addEventListener("academicYearChanged", syncAvailableCycles);
+    return () => window.removeEventListener("academicYearChanged", syncAvailableCycles);
+  }, []);
+
   // -- HOD's own appraisal form state --
   const [info, setInfo] = useState({
     name: sessionStorage.getItem("name") || "",
@@ -420,7 +430,11 @@ export default function StandardMyAppraisal({
         setWorkflowDeclaration(declaration);
         const loadedReviews = reviewListFrom(data?.reviews);
         setWorkflowReviews(loadedReviews);
-        setAppraisalLocked(Boolean(declaration) && !hasActiveRejection(declaration, loadedReviews));
+        const cycles = JSON.parse(sessionStorage.getItem("availableCycles") || "[]");
+        const thisCycle = cycles.find((cycle) => cycle.academic_year === info.ay);
+        const isCycleClosed = thisCycle ? !thisCycle.is_open : false;
+        const submittedAlready = Boolean(declaration) && !hasActiveRejection(declaration, loadedReviews);
+        setAppraisalLocked(isCycleClosed || submittedAlready);
 
         await Promise.all([
           loadSavedAppraisal({
@@ -1068,6 +1082,47 @@ export default function StandardMyAppraisal({
     win.document.close();
   };
   const workflowRejected = hasActiveRejection(workflowDeclaration, workflowReviews);
+  function normalizeAcademicYearCycles(cyclesData) {
+    const normalizeCycle = (cycle) => {
+      if (!cycle) return null;
+      if (typeof cycle === "string") {
+        return { academic_year: cycle, is_open: true };
+      }
+      const academicYear = cycle.academic_year || cycle.academicYear || cycle.year || cycle.year_label || "";
+      if (!academicYear) return null;
+      return {
+        academic_year: String(academicYear),
+        is_open: cycle.is_open ?? cycle.isOpen ?? cycle.active ?? cycle.open ?? false,
+      };
+    };
+
+    if (Array.isArray(cyclesData)) {
+      return cyclesData
+        .map(normalizeCycle)
+        .filter(Boolean)
+        .reduce((acc, cycle) => {
+          if (!acc.some((existing) => existing.academic_year === cycle.academic_year)) {
+            acc.push(cycle);
+          }
+          return acc;
+        }, [])
+        .sort((a, b) => a.academic_year.localeCompare(b.academic_year));
+    }
+    if (Array.isArray(cyclesData?.cycles)) return normalizeAcademicYearCycles(cyclesData.cycles);
+    if (Array.isArray(cyclesData?.data)) return normalizeAcademicYearCycles(cyclesData.data);
+    return [];
+  }
+
+  const academicYearOptions = availableCyclesState.length
+    ? availableCyclesState
+    : [{ academic_year: info.ay || resolvedAcademicYear, is_open: true }];
+  const handleAcademicYearChange = (newAcademicYear) => {
+    setInfo((previousInfo) => ({ ...previousInfo, ay: newAcademicYear }));
+    sessionStorage.setItem("academicYear", newAcademicYear);
+    window.dispatchEvent(new CustomEvent("academicYearChanged", {
+      detail: { academicYear: newAcademicYear },
+    }));
+  };
 
   return (
     <div className="appraisal-form-shell" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -1091,7 +1146,22 @@ export default function StandardMyAppraisal({
             <div className="appraisal-page-header" style={{ background: "#fff", borderRadius: 14, padding: "18px 28px", boxShadow: "0 10px 28px rgba(17,24,39,0.06)", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
               <div>
                 <h2 style={{ margin: 0, fontSize: 30, fontWeight: 800, color: "#111827", letterSpacing: 0, lineHeight: 1.1 }}>My Appraisal Form</h2>
-                <p style={{ margin: "6px 0 0", fontSize: 14, color: "#6b7280", fontWeight: 600 }}>{info.name || titleNameFallback}{subtitleSeparator} {info.ay}</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, fontSize: 14, color: "#6b7280", fontWeight: 600, flexWrap: "wrap" }}>
+                  <span>{info.name || titleNameFallback}</span>
+                  <span>{subtitleSeparator}</span>
+                  <span>Academic Year:</span>
+                  <select
+                    value={info.ay}
+                    onChange={(event) => handleAcademicYearChange(event.target.value)}
+                    style={{ height: 32, border: "1px solid #d1d5db", borderRadius: 8, padding: "0 10px", fontSize: 13, fontFamily: "inherit", color: "#374151", background: "#fff", outline: "none", fontWeight: 700 }}
+                  >
+                    {academicYearOptions.map((cycle) => (
+                      <option key={cycle.academic_year} value={cycle.academic_year}>
+                        {cycle.academic_year} {cycle.is_open ? "(Active)" : "(Closed / Read-Only)"}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <AppraisalHeaderImage height={58} />
             </div>

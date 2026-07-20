@@ -1,14 +1,30 @@
 import axios from "axios";
-// https://faculty-appraisal-java-backend-376777978967.asia-south1.run.app
-// https://faculty-appraisal-git-376777978967.asia-south1.run.app
-const DEFAULT_API_BASE_URL =
-  "http://150.129.156.37:8000/api/v1";
+// Default API URL fallback. For production or custom configurations, specify VITE_API_BASE_URL in your .env file.
+const DEFAULT_API_BASE_URL = "/api/v1";
 
-const rawBaseUrl = (
+let baseRawUrl = (
   import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL
 ).replace(/\/$/, "");
 
-export const API_BASE_URL = rawBaseUrl;
+if (baseRawUrl.startsWith("/") && typeof window !== "undefined" && window.location) {
+  const { hostname, port, protocol } = window.location;
+  if (port === "3000" || port === "5173" || port === "5174") {
+    baseRawUrl = `${protocol}//${hostname}:8000${baseRawUrl}`;
+  }
+}
+
+const rawBaseUrl = baseRawUrl;
+
+const isHttpsFrontend =
+  typeof window !== "undefined" &&
+  window.location &&
+  window.location.protocol === "https:";
+
+// Force HTTPS for non-localhost/non-loopback URLs if the frontend is HTTPS to prevent mixed-content blocks.
+export const API_BASE_URL =
+  isHttpsFrontend && /^http:\/\/(?!(localhost|127\.0\.0\.1))/.test(rawBaseUrl)
+    ? rawBaseUrl.replace(/^http:\/\//, "https://")
+    : rawBaseUrl;
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -32,12 +48,67 @@ const isAuthFormRequest = (url = "") =>
     String(url).includes(path),
   );
 
+export const getFileUrl = (url) => {
+  if (!url) return "";
+  const cleanUrl = String(url).replace(/["']/g, "").trim();
+
+  if (
+    cleanUrl.startsWith("http://") ||
+    cleanUrl.startsWith("https://") ||
+    cleanUrl.startsWith("blob:") ||
+    cleanUrl.startsWith("data:")
+  ) {
+    return cleanUrl;
+  }
+
+  try {
+    const baseForURL = API_BASE_URL.startsWith("http")
+      ? API_BASE_URL
+      : typeof window !== "undefined" && window.location
+        ? window.location.origin + API_BASE_URL
+        : API_BASE_URL;
+    const origin = new URL(baseForURL).origin;
+    return cleanUrl.startsWith("/") ? `${origin}${cleanUrl}` : `${origin}/${cleanUrl}`;
+  } catch {
+    return cleanUrl;
+  }
+};
+
+export const resolveRelativeUrls = (data) => {
+  if (!data) return data;
+  if (Array.isArray(data)) {
+    return data.map(resolveRelativeUrls);
+  }
+  if (typeof data === "object") {
+    const resolved = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (
+        typeof value === "string" &&
+        ["url", "file_url", "fileUrl", "avatar_url", "avatarUrl"].includes(key)
+      ) {
+        resolved[key] = getFileUrl(value);
+      } else if (typeof value === "object" && value !== null) {
+        resolved[key] = resolveRelativeUrls(value);
+      } else {
+        resolved[key] = value;
+      }
+    }
+    return resolved;
+  }
+  return data;
+};
+
 // Normalize every API error so err.message is always a user-safe string.
 // Backend detail fields are developer-facing; show user_message when present.
 // 401 clears the session and redirects to /login automatically, except while
 // the user is already using an auth form.
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.data) {
+      response.data = resolveRelativeUrls(response.data);
+    }
+    return response;
+  },
   (error) => {
     const data = error?.response?.data;
     const status = error?.response?.status;
@@ -72,6 +143,7 @@ export const api = {
     apiClient.put(url, data, config).then((response) => response.data),
   delete: (url, config) =>
     apiClient.delete(url, config).then((response) => response.data),
+  getFileUrl,
 };
 
 // Returns an AbortController whose signal can be passed as { signal } in axios config.

@@ -7,6 +7,31 @@ import { APP_INFO } from "./constants/formConfig";
 import { getMe } from "./services/authService";
 import { api } from "./services/api";
 
+const normalizeAcademicYearCycles = (cyclesData) => {
+  const normalizeCycle = (cycle) => {
+    if (!cycle) return null;
+    if (typeof cycle === "string") {
+      return { academic_year: cycle, is_open: true };
+    }
+
+    const academicYear = cycle.academic_year || cycle.academicYear || cycle.year || cycle.year_label || "";
+    if (!academicYear) return null;
+
+    return {
+      academic_year: String(academicYear),
+      is_open: cycle.is_open ?? cycle.isOpen ?? cycle.active ?? cycle.open ?? false,
+    };
+  };
+
+  if (Array.isArray(cyclesData)) {
+    return cyclesData.map(normalizeCycle).filter(Boolean);
+  }
+
+  if (Array.isArray(cyclesData?.cycles)) return normalizeAcademicYearCycles(cyclesData.cycles);
+  if (Array.isArray(cyclesData?.data)) return normalizeAcademicYearCycles(cyclesData.data);
+  return [];
+};
+
 const Login        = lazy(() => import("./pages/Login"));
 const Signup       = lazy(() => import("./pages/Signup"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
@@ -31,6 +56,13 @@ function ProfileLoader() {
 
   useEffect(() => {
     let cancelled = false;
+    const normalizeAcademicYearCycles = (cyclesData) => {
+      if (Array.isArray(cyclesData)) return cyclesData;
+      if (cyclesData?.cycles && Array.isArray(cyclesData.cycles)) return cyclesData.cycles;
+      if (Array.isArray(cyclesData?.data)) return cyclesData.data;
+      return [];
+    };
+
     const load = async () => {
       try {
         const profile = await getMe();
@@ -43,11 +75,11 @@ function ProfileLoader() {
 
         try {
           const cyclesData = await api.get("/appraisal/cycles");
-          if (Array.isArray(cyclesData)) {
-            cycles = cyclesData;
-            const matchingCycle = cyclesData.find((cycle) => cycle.academic_year === storedAcademicYear);
-            const openCycle = cyclesData.find((cycle) => cycle.is_open);
-            const fallbackCycle = matchingCycle || openCycle || cyclesData[0];
+          cycles = normalizeAcademicYearCycles(cyclesData);
+          if (cycles.length) {
+            const matchingCycle = cycles.find((cycle) => cycle.academic_year === storedAcademicYear);
+            const openCycle = cycles.find((cycle) => cycle.is_open);
+            const fallbackCycle = matchingCycle || openCycle || cycles[0];
             if (fallbackCycle) {
               ay = fallbackCycle.academic_year;
             }
@@ -125,6 +157,38 @@ export default function App() {
       document.removeEventListener("wheel", preventWheelChange, { capture: true });
       document.removeEventListener("keydown", preventArrowKeyChange, true);
     };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const refreshAcademicYearCycles = async () => {
+      const token = sessionStorage.getItem("accessToken") || sessionStorage.getItem("token");
+      if (!token) return;
+
+      try {
+        const cyclesData = await api.get("/appraisal/cycles");
+        if (cancelled) return;
+
+        const cycles = normalizeAcademicYearCycles(cyclesData);
+        if (!cycles.length) return;
+
+        const storedAcademicYear = sessionStorage.getItem("academicYear");
+        const matchingCycle = cycles.find((cycle) => cycle.academic_year === storedAcademicYear);
+        const openCycle = cycles.find((cycle) => cycle.is_open);
+        const fallbackCycle = matchingCycle || openCycle || cycles[0];
+        const ay = fallbackCycle?.academic_year || APP_INFO.DEFAULT_AY;
+
+        sessionStorage.setItem("availableCycles", JSON.stringify(cycles));
+        sessionStorage.setItem("academicYear", ay);
+        window.dispatchEvent(new CustomEvent("academicYearChanged", { detail: { academicYear: ay } }));
+      } catch (error) {
+        console.error("Could not refresh academic year cycles:", error);
+      }
+    };
+
+    refreshAcademicYearCycles();
+    return () => { cancelled = true; };
   }, []);
 
   return (

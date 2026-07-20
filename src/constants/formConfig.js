@@ -92,7 +92,10 @@ export const RESEARCH_MULTIPLIERS = {
 export const APP_INFO = {
   UNIVERSITY_NAME: "University Name",
   UNIVERSITY_LOCATION: "City, Country",
-  DEFAULT_AY: "2026-2027",
+  get DEFAULT_AY() {
+    if (typeof window === "undefined") return "2025-2026";
+    return sessionStorage.getItem("academicYear") || "2025-2026";
+  },
   PORTAL_NAME: "Faculty Appraisal Portal",
   SHORT_NAME: "UNI"
 };
