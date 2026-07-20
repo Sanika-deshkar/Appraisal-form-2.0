@@ -19,6 +19,16 @@ function EyeIcon() {
   );
 }
 
+function DownloadIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3v12" />
+      <path d="m7 10 5 5 5-5" />
+      <path d="M5 21h14" />
+    </svg>
+  );
+}
+
 
 export function SectionCard({ title, subtitle, accent = "#6366f1", scoreBadge, children }) {
   return (
@@ -162,21 +172,32 @@ export function ViewDocsCell({ docKey, docs, emptyText = "No docs", compact = fa
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: compact ? 4 : 6, alignItems: compact ? "center" : "flex-start" }}>
+    <div style={{ display: "flex", flexDirection: compact ? "row" : "column", gap: compact ? 5 : 6, alignItems: compact ? "center" : "flex-start", justifyContent: "center", flexWrap: "wrap" }}>
       {files.map((file, idx) => (
-        <a
-          key={`${file.url || file.name || "doc"}-${idx}`}
-          href={file.url}
-          target="_blank"
-          rel="noreferrer"
-          aria-label={`View ${file.name || "document"}`}
-          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, color: "#4338ca", fontSize: compact ? 0 : 12, textDecoration: "none", background: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: compact ? "50%" : 999, padding: compact ? 0 : "7px 10px", width: compact ? 36 : "auto", height: compact ? 36 : "auto", whiteSpace: "nowrap", fontWeight: 800 }}
-          title={file.name}
-        >
-          {file.type?.startsWith("image/") && <img src={file.url} alt="" style={{ width: 22, height: 22, objectFit: "cover", borderRadius: 3 }} />}
-          <EyeIcon />
-          {!compact && <>View {file.name?.length > 16 ? `${file.name.slice(0, 16)}...` : file.name || "Document"}</>}
-        </a>
+        <div key={`${file.url || file.name || "doc"}-${idx}`} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <a
+            href={file.url}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`View ${file.name || "document"}`}
+            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, color: "#4338ca", fontSize: compact ? 0 : 12, textDecoration: "none", background: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: compact ? "50%" : 999, padding: compact ? 0 : "7px 10px", width: compact ? 34 : "auto", height: compact ? 34 : "auto", whiteSpace: "nowrap", fontWeight: 800 }}
+            title={`View ${file.name || "document"}`}
+          >
+            {file.type?.startsWith("image/") && <img src={file.url} alt="" style={{ width: 22, height: 22, objectFit: "cover", borderRadius: 3 }} />}
+            <EyeIcon />
+            {!compact && <>View {file.name?.length > 16 ? `${file.name.slice(0, 16)}...` : file.name || "Document"}</>}
+          </a>
+          <a
+            href={file.url}
+            download={file.name || true}
+            aria-label={`Download ${file.name || "document"}`}
+            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, color: "#047857", fontSize: compact ? 0 : 12, textDecoration: "none", background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: compact ? "50%" : 999, padding: compact ? 0 : "7px 10px", width: compact ? 34 : "auto", height: compact ? 34 : "auto", whiteSpace: "nowrap", fontWeight: 800 }}
+            title={`Download ${file.name || "document"}`}
+          >
+            <DownloadIcon />
+            {!compact && <>Download</>}
+          </a>
+        </div>
       ))}
     </div>
   );
