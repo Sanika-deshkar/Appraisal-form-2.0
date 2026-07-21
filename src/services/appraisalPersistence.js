@@ -78,10 +78,57 @@ const applySnapshotToSetters = (snapshotPayload, setters) =>{
  }
 };
 
+const submittedFormFromResponse = (response) =>
+ response?.payload?.form || response?.form || null;
+
+const submittedDocsFromResponse = (response) =>
+ response?.payload?.docs || response?.docs || null;
+
+const applySubmittedAppraisalToSetters = (submittedAppraisal, setters) =>{
+ if (!submittedAppraisal || !setters) return false;
+ const submittedForm = normalizeFetchedForm(submittedFormFromResponse(submittedAppraisal));
+ if (!submittedForm) return false;
+
+ Object.entries(SNAPSHOT_SETTERS).forEach(([formKey, setterKey]) =>{
+ if (Object.prototype.hasOwnProperty.call(submittedForm, formKey)) {
+ if (formKey === "info") {
+ setters[setterKey]?.((current = {}) =>normalizeInfo(submittedForm[formKey], current, submittedForm, submittedAppraisal));
+ } else {
+ setters[setterKey]?.(submittedForm[formKey]);
+ }
+ }
+ });
+
+ const submittedDocs = submittedDocsFromResponse(submittedAppraisal);
+ if (submittedDocs) {
+ setters.setDocs?.(normalizeDocsMap(submittedDocs));
+ }
+
+ return true;
+};
+
 const normalizeDocsMap = (docs = {}) =>
  Object.fromEntries(
  Object.entries(docs || {}).map(([key, files]) =>[key, filesForDocValue(files)]),
  );
+
+const mergeDocsMap = (baseDocs = {}, nextDocs = {}) =>{
+ const merged = { ...normalizeDocsMap(baseDocs) };
+ Object.entries(normalizeDocsMap(nextDocs)).forEach(([key, files]) =>{
+ const existing = merged[key] || [];
+ const seen = new Set(existing.map((file) =>file?.url || file?.name).filter(Boolean));
+ merged[key] = [
+ ...existing,
+ ...files.filter((file) =>{
+ const identity = file?.url || file?.name;
+ if (!identity || seen.has(identity)) return false;
+ seen.add(identity);
+ return true;
+ }),
+ ];
+ });
+ return merged;
+};
 
 const defaultAcrRows = () =>[
  { label: "Self-motivation & Proactiveness" },
@@ -237,7 +284,7 @@ export const loadAppraisalDocuments = async ({ facultyEmail, academicYear, setDo
  });
  });
 
- setDocs(groupedDocs);
+ setDocs((currentDocs = {}) =>mergeDocsMap(currentDocs, groupedDocs));
  } catch {
  // non-fatal
  }
@@ -252,6 +299,28 @@ export const loadSavedAppraisal = async ({ facultyEmail, academicYear, setters }
  } else {
  resetSnapshotSetters(academicYear, setters);
  }
+};
+
+export const loadClosedAppraisal = async ({ facultyEmail, academicYear, setters }) =>{
+ if (!facultyEmail || !academicYear || !setters) return null;
+
+ try {
+ const submittedAppraisal = await fetchSavedAppraisal({ facultyEmail, academicYear });
+ if (applySubmittedAppraisalToSetters(submittedAppraisal, setters)) {
+ return submittedAppraisal;
+ }
+ } catch (err) {
+ console.warn("Could not load submitted appraisal for closed year; falling back to snapshot:", err);
+ }
+
+ const snapshotPayload = await loadAppraisalSnapshot({ facultyEmail, academicYear });
+ if (snapshotPayload) {
+ applySnapshotToSetters(snapshotPayload, setters);
+ return snapshotPayload;
+ }
+
+ resetSnapshotSetters(academicYear, setters);
+ return null;
 };
 
 // Used by reviewWorkflow to load any faculty's appraisal for authority review.

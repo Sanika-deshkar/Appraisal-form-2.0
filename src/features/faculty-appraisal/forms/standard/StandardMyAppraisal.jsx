@@ -8,6 +8,7 @@ import {
   createAcrRows,
 } from "../../config";
 import {
+  loadClosedAppraisal,
   loadAppraisalDocuments,
   loadSavedAppraisal,
   saveAppraisalDraftSection,
@@ -46,6 +47,7 @@ import {
   TDS,
   TH,
   ViewCell,
+  ViewDocsCell,
 } from "../../components";
 import {
   n,
@@ -415,6 +417,17 @@ export default function StandardMyAppraisal({
   const [savingSection, setSavingSection] = useState(null);
   const [workflowDeclaration, setWorkflowDeclaration] = useState(null);
   const [workflowReviews, setWorkflowReviews] = useState([]);
+  const selectedCycle = availableCyclesState.find((cycle) => cycle.academic_year === info.ay);
+  const isSelectedCycleClosed = selectedCycle ? !selectedCycle.is_open : false;
+
+  const appraisalSetters = {
+    setInfo, setLectures, setCourseFile, setInnovRows: (rows) => setInnovRows(sanitizeInnovativeRows(rows)), setInnovDetails, setInnovScore,
+    setProjects, setObeRows, setMentoringRows, setQuals, setFeedback, setDeptActs, setUniActs,
+    setEventRows, setSociety, setIndustry, setAlumniRows, setPlacementRows, setAcr, setJournals, setBooks, setIct,
+    setResearch, setProjects2, setExternalProjects, setPatents, setAwards,
+    setConfs, setProposals, setProducts, setFdps, setTraining, setDocs,
+    setSummaryOtherInfo, setSectionApplicability, setSectionSaveStatus,
+  };
 
   useEffect(() => {
     const userEmail = sessionStorage.getItem("username");
@@ -430,25 +443,20 @@ export default function StandardMyAppraisal({
         setWorkflowDeclaration(declaration);
         const loadedReviews = reviewListFrom(data?.reviews);
         setWorkflowReviews(loadedReviews);
-        const cycles = JSON.parse(sessionStorage.getItem("availableCycles") || "[]");
-        const thisCycle = cycles.find((cycle) => cycle.academic_year === info.ay);
-        const isCycleClosed = thisCycle ? !thisCycle.is_open : false;
         const submittedAlready = Boolean(declaration) && !hasActiveRejection(declaration, loadedReviews);
-        setAppraisalLocked(isCycleClosed || submittedAlready);
+        setAppraisalLocked(isSelectedCycleClosed || submittedAlready);
+
+        const savedAppraisal = await (isSelectedCycleClosed ? loadClosedAppraisal : loadSavedAppraisal)({
+          facultyEmail: userEmail,
+          academicYear: info.ay,
+          setters: appraisalSetters,
+        });
+        const savedDeclaration = savedAppraisal?.declaration || savedAppraisal?.payload?.declaration || null;
+        if (savedDeclaration && !declaration) setWorkflowDeclaration(savedDeclaration);
+        const savedReviews = reviewListFrom(savedAppraisal?.reviews || savedAppraisal?.payload?.reviews);
+        if (savedReviews.length && !loadedReviews.length) setWorkflowReviews(savedReviews);
 
         await Promise.all([
-          loadSavedAppraisal({
-            facultyEmail: userEmail,
-            academicYear: info.ay,
-            setters: {
-              setInfo, setLectures, setCourseFile, setInnovRows: (rows) => setInnovRows(sanitizeInnovativeRows(rows)), setInnovDetails, setInnovScore,
-              setProjects, setObeRows, setMentoringRows, setQuals, setFeedback, setDeptActs, setUniActs,
-              setEventRows, setSociety, setIndustry, setAlumniRows, setPlacementRows, setAcr, setJournals, setBooks, setIct,
-              setResearch, setProjects2, setExternalProjects, setPatents, setAwards,
-              setConfs, setProposals, setProducts, setFdps, setTraining, setDocs,
-              setSummaryOtherInfo, setSectionApplicability, setSectionSaveStatus,
-            },
-          }),
           loadAppraisalDocuments({ facultyEmail: userEmail, academicYear: info.ay, setDocs }),
         ]);
       } catch (err) {
@@ -457,7 +465,7 @@ export default function StandardMyAppraisal({
     };
 
     loadOwnAppraisal();
-  }, [info.ay]);
+  }, [info.ay, isSelectedCycleClosed]);
 
   // -- Computed scores for HOD appraisal --
   const totalLecScore = sumSectionScore(lectures, A1_COURSE_DELIVERY_MAX, "score", 10);
@@ -1116,6 +1124,14 @@ export default function StandardMyAppraisal({
   const academicYearOptions = availableCyclesState.length
     ? availableCyclesState
     : [{ academic_year: info.ay || resolvedAcademicYear, is_open: true }];
+  const documentKeys = Object.keys(docs || {}).filter((key) => {
+    const files = Array.isArray(docs?.[key]) ? docs[key] : docs?.[key] ? [docs[key]] : [];
+    return files.length > 0;
+  }).sort();
+  const documentCount = documentKeys.reduce((total, key) => {
+    const files = Array.isArray(docs?.[key]) ? docs[key] : docs?.[key] ? [docs[key]] : [];
+    return total + files.length;
+  }, 0);
   const handleAcademicYearChange = (newAcademicYear) => {
     setInfo((previousInfo) => ({ ...previousInfo, ay: newAcademicYear }));
     sessionStorage.setItem("academicYear", newAcademicYear);
@@ -1126,7 +1142,7 @@ export default function StandardMyAppraisal({
 
   return (
     <div className="appraisal-form-shell" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      {showSectionSelector && (
+      {showSectionSelector && !isSelectedCycleClosed && (
       <div className="appraisal-section-selector" style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 20, padding: "16px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap", boxShadow: "0 12px 30px rgba(17,24,39,0.06)" }}>
         <div style={{ fontSize: 13, color: "#6b7280", fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.6 }}>My Appraisal Section</div>
         <select
@@ -1192,12 +1208,54 @@ export default function StandardMyAppraisal({
               <div style={{ background: workflowRejected ? "#fef2f2" : "#ecfdf5", border: `1px solid ${workflowRejected ? "#fecaca" : "#bbf7d0"}`, color: workflowRejected ? "#991b1b" : "#166534", borderRadius: 9, padding: "10px 14px", fontSize: 12, fontWeight: 700 }}>
                 {workflowRejected
                   ? "This appraisal was rejected. Review the approval status in the tracker above."
-                  : "Submitted and locked for review. Your saved data is visible here, but editing is disabled while authorities review it."}
+                  : isSelectedCycleClosed
+                    ? "This appraisal year is closed. The submitted report and stored attachments are shown in read-only mode."
+                    : "Submitted and locked for review. Your saved data is visible here, but editing is disabled while authorities review it."}
               </div>
             )}
 
+            {isSelectedCycleClosed ? (
+              <SC title="Closed Appraisal Report" accent="#4c1d95">
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+                  {[
+                    ["Academic Year", info.ay || "-"],
+                    ["Submitted Score", `${grandTotal.toFixed(1)} / ${effectiveGrandMax}`],
+                    ["Documents", `${documentCount} file${documentCount === 1 ? "" : "s"}`],
+                  ].map(([label, value]) => (
+                    <div key={label} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: "12px 14px", background: "#f8fafc" }}>
+                      <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
+                      <div style={{ marginTop: 5, fontSize: 16, color: "#111827", fontWeight: 900 }}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
+                  <button
+                    type="button"
+                    onClick={generateReport}
+                    style={{ padding: "10px 28px", background: "#4c1d95", color: "#fff", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}
+                  >
+                    Generate Report
+                  </button>
+                </div>
+                <div style={{ marginTop: 18, borderTop: "1px solid #e5e7eb", paddingTop: 16 }}>
+                  <div style={{ fontSize: 13, color: "#374151", fontWeight: 900, marginBottom: 10 }}>Attachments</div>
+                  {documentKeys.length ? (
+                    <div style={{ display: "grid", gap: 10 }}>
+                      {documentKeys.map((key) => (
+                        <div key={key} style={{ display: "grid", gridTemplateColumns: "minmax(120px, 180px) minmax(0, 1fr)", alignItems: "center", gap: 12, border: "1px solid #e5e7eb", borderRadius: 10, padding: "10px 12px", background: "#fff" }}>
+                          <div style={{ fontSize: 12, color: "#475569", fontWeight: 800 }}>{key}</div>
+                          <ViewDocsCell docKey={key} docs={docs} />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 12, color: "#64748b", fontWeight: 700, padding: "12px 14px", border: "1px solid #e5e7eb", borderRadius: 10, background: "#f8fafc" }}>No attachments found for this closed appraisal year.</div>
+                  )}
+                </div>
+              </SC>
+            ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div style={{ flex: 1, pointerEvents: appraisalLocked && hodAppraisalTab !== "summary" ? "none" : "auto", opacity: appraisalLocked && hodAppraisalTab !== "summary" ? 0.78 : 1 }}>
+              <fieldset disabled={appraisalLocked && hodAppraisalTab !== "summary"} style={{ flex: 1, minWidth: 0, border: 0, padding: 0, margin: 0, opacity: appraisalLocked && hodAppraisalTab !== "summary" ? 0.86 : 1 }}>
 
                 {/* Part A Tab */}
                 {hodAppraisalTab === "partA" && (
@@ -2392,8 +2450,9 @@ export default function StandardMyAppraisal({
                     </div>
                   </SC>
                 )}
-              </div>
+              </fieldset>
             </div>
+            )}
           </div>
     </div>
   );
