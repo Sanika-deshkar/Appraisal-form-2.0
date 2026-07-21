@@ -85,22 +85,6 @@ export default function DashboardLayout({
     <div style={containerStyle}>
       {sidebar}
       <main style={mainStyle}>
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-          <label style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#fff", border: "1px solid #dbe3ef", borderRadius: 999, padding: "8px 12px", boxShadow: "0 1px 3px rgba(15, 23, 42, 0.08)", fontSize: 13, color: "#334155", fontWeight: 600 }}>
-            <span>Academic year</span>
-            <select
-              value={academicYearState.selectedAcademicYear}
-              onChange={handleAcademicYearChange}
-              style={{ border: "none", background: "transparent", outline: "none", color: "#0f172a", fontFamily: "inherit", fontWeight: 700, cursor: "pointer" }}
-            >
-              {academicYearState.options.map((academicYear) => (
-                <option key={academicYear} value={academicYear}>
-                  {academicYear}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
         {children}
       </main>
 

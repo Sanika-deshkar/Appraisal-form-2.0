@@ -1,4 +1,4 @@
-﻿import {
+import {
   clampScore,
   researchGuidanceScore,
   reviewSectionScore,
@@ -450,6 +450,42 @@ export const openFullFormReport = async ({
 
   const sectionAllowed = (section) =>
     isSectionReportable(form, section) && !(hideAcr && section.key === "acr");
+
+  const hasInnovativeSection = partASections.some(
+    (s) => s.key === "innovative" || s.key === "innovRows" || s.key === "innovativeTeaching"
+  );
+  const renderPartA = () => {
+    let innovativeRendered = false;
+    const items = [];
+    const allowed = partASections.filter((s) => sectionAllowed(s));
+    for (let i = 0; i < allowed.length; i++) {
+      const section = allowed[i];
+      if (section.key === "innovative" || section.key === "innovRows" || section.key === "innovativeTeaching") {
+        items.push(renderInnovativeSection({ form, docs, scoreRoles, roleLabel, showTotal }));
+        innovativeRendered = true;
+      } else {
+        items.push(
+          renderSection({
+            section,
+            rows: form[section.key],
+            docs,
+            scoreRoles,
+            roleLabel,
+            showTotal,
+          })
+        );
+        if (!hasInnovativeSection && !innovativeRendered && (section.key === "courseFile" || i === 1)) {
+          items.push(renderInnovativeSection({ form, docs, scoreRoles, roleLabel, showTotal }));
+          innovativeRendered = true;
+        }
+      }
+    }
+    if (!hasInnovativeSection && !innovativeRendered) {
+      items.push(renderInnovativeSection({ form, docs, scoreRoles, roleLabel, showTotal }));
+    }
+    return items.join("");
+  };
+
   const html = `<!doctype html>
 <html>
 <head>
@@ -496,35 +532,7 @@ export const openFullFormReport = async ({
   </table>
 
   <h3 style="background:#d9d9d9;padding:4px;text-align:center;font-size:13px">PART A - Teaching Process &amp; Academic Activities</h3>
-  ${partASections
-    .slice(0, 2)
-    .filter((section) => sectionAllowed(section))
-    .map((section) =>
-      renderSection({
-        section,
-        rows: form[section.key],
-        docs,
-        scoreRoles,
-        roleLabel,
-        showTotal,
-      }),
-    )
-    .join("")}
-  ${renderInnovativeSection({ form, docs, scoreRoles, roleLabel, showTotal })}
-  ${partASections
-    .slice(2)
-    .filter((section) => sectionAllowed(section))
-    .map((section) =>
-      renderSection({
-        section,
-        rows: form[section.key],
-        docs,
-        scoreRoles,
-        roleLabel,
-        showTotal,
-      }),
-    )
-    .join("")}
+  ${renderPartA()}
 
   <div class="page-break"></div>
   <h3 style="background:#d9d9d9;padding:4px;text-align:center;font-size:13px">PART B - Research &amp; Academic Contributions</h3>
@@ -669,33 +677,20 @@ export const generateMediaCommReport = async ({
 
   <h3 style="background:#d9d9d9;padding:4px;text-align:center;font-size:13px">PART A - Teaching Process &amp; Academic Activities</h3>
   ${partASections
-    .slice(0, 2)
     .filter((s) => isSectionReportable(form, s))
-    .map((s) =>
-      renderSection({
+    .map((s) => {
+      if (s.key === "innovative" || s.key === "innovRows" || s.key === "innovativeTeaching") {
+        return renderInnovativeSection({ form, docs, scoreRoles, roleLabel: undefined, showTotal: true });
+      }
+      return renderSection({
         section: s,
         rows: form[s.key],
         docs,
         scoreRoles,
         roleLabel: undefined,
         showTotal: true,
-      }),
-    )
-    .join("")}
-  ${renderInnovativeSection({ form, docs, scoreRoles, roleLabel: undefined, showTotal: true })}
-  ${partASections
-    .slice(2)
-    .filter((s) => isSectionReportable(form, s))
-    .map((s) =>
-      renderSection({
-        section: s,
-        rows: form[s.key],
-        docs,
-        scoreRoles,
-        roleLabel: undefined,
-        showTotal: true,
-      }),
-    )
+      });
+    })
     .join("")}
 
   <div class="pb"></div>
