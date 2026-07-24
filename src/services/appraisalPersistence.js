@@ -101,6 +101,8 @@ const applySubmittedAppraisalToSetters = (submittedAppraisal, setters) =>{
  const submittedDocs = submittedDocsFromResponse(submittedAppraisal);
  if (submittedDocs) {
  setters.setDocs?.(normalizeDocsMap(submittedDocs));
+ } else {
+ setters.setDocs?.({});
  }
 
  return true;
@@ -282,7 +284,7 @@ export const loadAppraisalDocuments = async ({ facultyEmail, academicYear, setDo
  });
  });
 
- setDocs((currentDocs = {}) =>mergeDocsMap(currentDocs, groupedDocs));
+ setDocs(groupedDocs);
  } catch {
  // non-fatal
  }

@@ -1,6 +1,8 @@
 /* eslint-disable no-unused-vars, react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import DashboardLayout from "../components/dashboard/DashboardLayout";
+import DashboardSidebar from "../components/dashboard/DashboardSidebar";
 import { Avatar, LogoutConfirmModal, ScoreBar, StatusBadge } from "../components/dashboard/dashboardPrimitives";
 import { getSchoolKey } from "../constants/universityHierarchy";
 import { api } from "../services/api";
@@ -56,12 +58,15 @@ import {
  summaryOtherInfoValueFrom,
  RejectionNotice,
  DocCell,
+ ViewDocsCell,
  SectionSaveFooter,
 } from "../features/faculty-appraisal";
 import { canReviewerRejectProfile, getReviewChain, pendingStatusFor, profileFromsessionStorage, reviewedStatusFor, roleLabel, visiblePreviousReviewRoles, workflowValidationError, isAppraisalFinalisedByVc, isRejectedStatus, isPendingReviewStatusFor, hasActiveRejection, reviewListFrom } from "../utils/hierarchy";
 import { n, pct, RO, TI } from "../features/faculty-appraisal/shared";
 
 import { emptyMediaForm, ALL_ARRAY_KEYS, titleCase, calculateMediaTotals, getMediaEffectiveMaxScores, validateMediaBeforeSubmit, mergeForm, preserveSavedReviewScores, PART_A_SECTIONS, PART_B_SECTIONS, MediaForm, MediaCommAuthorityReviewPanel, SectionSelector, AccuracyCheckbox, CompactAuthoritySummaryCard, isReviewerReviewComplete, normalizeScoresForSubmit, summaryRow, b8summaryRow, SECTION_OPTIONS, SummaryBox, WorkflowTracker, ACCENT, ACCENT2, userInitials } from "../components/appraisal/mediaCommunication/MediaCommunicationAppraisalForm";
+import { loadClosedAppraisal } from "../services/appraisalPersistence";
+
 export default function MediaCommDashboard({ fixedRole }) {
  const navigate = useNavigate();
  const role = fixedRole || sessionStorage.getItem("role") || "faculty";
@@ -83,12 +88,64 @@ export default function MediaCommDashboard({ fixedRole }) {
  const [savingSection, setSavingSection] = useState(null);
  const [declaration, setDeclaration] = useState(null);
  const [reviews, setReviews] = useState([]);
+ const [availableCycles, setAvailableCycles] = useState([]);
  const userEmail = sessionStorage.getItem("username") || "";
- const academicYear = form.info?.ay || "2026-2027";
+ const academicYear = form.info?.ay || sessionStorage.getItem("academicYear") || "2026-2027";
+ const currentSchoolValue = form.info?.school || profile.school || sessionStorage.getItem("school") || sessionStorage.getItem("schoolName") || "SoMCS";
+
+ useEffect(() => {
+   const fetchCycles = async () => {
+     try {
+       const res = await api.get("/academic-years/available");
+       const cycles = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+       if (cycles.length > 0) {
+         const formatted = cycles.map((c) => ({
+           academic_year: c.academic_year || c.academicYear || c.year || String(c),
+           is_open: c.is_open !== undefined ? Boolean(c.is_open) : true,
+         }));
+         setAvailableCycles(formatted);
+       }
+     } catch (err) {
+       console.warn("Could not fetch available cycles:", err);
+     }
+   };
+   fetchCycles();
+ }, []);
+
+ const academicYearOptions = availableCycles.length > 0
+   ? availableCycles
+   : [
+       { academic_year: "2026-2027", is_open: true },
+       { academic_year: "2025-2026", is_open: false },
+     ];
+
+ const selectedCycle = academicYearOptions.find((c) => c.academic_year === academicYear);
+ const isSelectedCycleClosed = selectedCycle ? !selectedCycle.is_open : false;
  const workflowRejected = hasActiveRejection(declaration, reviews);
- const locked = Boolean(declaration) && !workflowRejected;
+ const locked = isSelectedCycleClosed || (Boolean(declaration) && !workflowRejected);
  const totals = calculateMediaTotals(form, "score");
  const canSelfSubmit = role !== "vc";
+
+ const handleAcademicYearChange = (newAy) => {
+   setForm((prev) => ({ ...prev, info: { ...prev.info, ay: newAy } }));
+   sessionStorage.setItem("academicYear", newAy);
+ };
+
+  const handleGenerateReport = () => {
+    openFullFormReport({
+      title: "School of Media & Communication Studies — Faculty Appraisal Report",
+      subtitle: `Academic Year: ${academicYear}`,
+      form,
+      docs,
+      partASections: PART_A_SECTIONS,
+      partBSections: PART_B_SECTIONS,
+      totals,
+      maxScores: totals.maxScores,
+      scoreRoles: ["score"],
+      roleLabel,
+      declaration,
+    });
+  };
 
  const setters = useMemo(() =>Object.fromEntries([
  ["setInfo", (value) =>setForm((prev) =>({ ...prev, info: { ...prev.info, ...value } }))],
@@ -106,6 +163,7 @@ export default function MediaCommDashboard({ fixedRole }) {
 
  useEffect(() =>{
  if (!userEmail || !academicYear || !canSelfSubmit) return;
+ setDocs({});
  const loadAll = async () =>{
  const data = await api.get("/appraisal/status", { params: { academic_year: academicYear } }).catch((err) =>{
  console.error("Could not load workflow status:", err);
@@ -115,13 +173,14 @@ export default function MediaCommDashboard({ fixedRole }) {
  const loadedReviews = reviewListFrom(data?.reviews);
  setDeclaration(declarationRow);
  setReviews(loadedReviews);
+ const loader = isSelectedCycleClosed ? loadClosedAppraisal : loadSavedAppraisal;
  await Promise.all([
- loadSavedAppraisal({ facultyEmail: userEmail, academicYear, setters }),
+ loader({ facultyEmail: userEmail, academicYear, setters }),
  loadAppraisalDocuments({ facultyEmail: userEmail, academicYear, setDocs }),
  ]);
  };
  loadAll().catch((err) =>console.error("Could not load SoMCS appraisal:", err));
- }, [userEmail, academicYear, setters, canSelfSubmit]);
+ }, [userEmail, academicYear, setters, canSelfSubmit, isSelectedCycleClosed]);
 
  const loadQueue = async () =>{
  if (role === "faculty") return;
@@ -307,37 +366,39 @@ export default function MediaCommDashboard({ fixedRole }) {
  const generateSelfReport = async () =>{
   const applicability = {};
   const rowSum = (key, max) =>scoreSectionRows(key, form[key] || [], max, "score");
-  const lecScore = averageSectionScore(form.lectures || [], 50, "score");
-  const cfScore = averageSectionScore(form.courseFile || [], 20, "score");
+  const lecScore = scoreSectionRows("lectures", form.lectures || [], 50, "score");
+  const cfScore = scoreSectionRows("courseFile", form.courseFile || [], 20, "score");
  const innovScore = clampScore(
  Array.isArray(form.innovRows)
  ? form.innovRows.reduce((t, r) =>t + clampScore(r.score, SCORE_LIMITS.innovativeRow), 0)
  : innovativeTeachingScore(form.innovDetails, form.innovScore, 10),
  10,
  );
- const projScore = rowSum("projects", 10);
- const qualScore = rowSum("quals", 10);
- const fbScore = feedbackSectionScore(form.feedback || [], 10);
- const deptScore = rowSum("deptActs", 20);
- const uniScore = rowSum("uniActs", 30);
- const socScore = rowSum("society", 10);
- const acrScore = 0;
- const b1iScore = rowSum("journals", 80);
- const b1iiScore = rowSum("popularWritings", 40);
- const b2Score = rowSum("books", 60);
- const b3Score = rowSum("ict", 30);
- const b4aScore = rowSum("research", 30);
- const b4bScore = rowSum("internalProjects", 15);
- const b4cScore = rowSum("externalProjects", 30);
- const b5Score = rowSum("awards", 10);
- const b6Score = rowSum("confs", 30);
- const b7aScore = rowSum("proposals", 10);
- const b7bScore = rowSum("products", 20);
- const b8Score = clampScore(rowSum("fdps", 20) + rowSum("training", 20), 20);
- const maxScores = getMediaEffectiveMaxScores(form, { self: true });
- const partATotal = clampScore(lecScore + cfScore + innovScore + projScore + qualScore + fbScore + deptScore + uniScore + socScore, maxScores.partA);
- const partBTotal = clampScore(b1iScore + b1iiScore + b2Score + b3Score + b4aScore + b4bScore + b4cScore + b5Score + b6Score + b7aScore + b7bScore + b8Score, maxScores.partB);
- const grandTotal = clampScore(partATotal + partBTotal, maxScores.grand);
+  const obeScore = scoreSectionRows("obeRows", form.obeRows || [], 20, "score");
+  const mentoringScore = scoreSectionRows("mentoringRows", form.mentoringRows || [], 10, "score");
+  const projScore = rowSum("projects", 10);
+  const qualScore = rowSum("quals", 10);
+  const fbScore = feedbackSectionScore(form.feedback || [], 10);
+  const deptScore = rowSum("deptActs", 20);
+  const uniScore = rowSum("uniActs", 30);
+  const socScore = rowSum("society", 10);
+  const acrScore = 0;
+  const b1Score = rowSum("journals", 60);
+  const b2Score = rowSum("books", 30);
+  const b3Score = rowSum("popularWritings", 40);
+  const b4Score = rowSum("externalProjects", 20);
+  const b5Score = rowSum("research", 20);
+  const b6Score = rowSum("consultancy", 30);
+  const b7Score = rowSum("confs", 20);
+  const b8Score = rowSum("fdps", 20);
+  const b9Score = rowSum("awards", 20);
+  const b10Score = rowSum("products", 20);
+  const b11Score = rowSum("ict", 40);
+  const b12Score = rowSum("exhibitions", 30);
+  const maxScores = getMediaEffectiveMaxScores(form, { self: true });
+  const partATotal = clampScore(lecScore + cfScore + innovScore + obeScore + mentoringScore + projScore + qualScore + fbScore, maxScores.partA);
+  const partBTotal = clampScore(b1Score + b2Score + b3Score + b4Score + b5Score + b6Score + b7Score + b8Score + b9Score + b10Score + b11Score + b12Score, maxScores.partB);
+  const grandTotal = clampScore(partATotal + partBTotal, maxScores.grand);
  await generateMediaCommReport({
  title: "SoMCS Faculty Appraisal Report",
  subtitle: "School of Media & Communication Studies",
@@ -357,106 +418,105 @@ export default function MediaCommDashboard({ fixedRole }) {
  })),
  detailedSummaryRows: [
  { isHeader: true, label: "Part A - Teaching Process & Academic Activities" },
- ...summaryRow(applicability, "lectures", { id: "A(i)", label: "Lectures / Tutorials / Practicals", max: 50, score: lecScore }),
- ...summaryRow(applicability, "courseFile", { id: "A(ii)", label: "Course File", max: 20, score: cfScore }),
- { id: "A(iii)", label: "Innovative Teaching-Learning Methodologies", max: 10, score: innovScore },
- ...summaryRow(applicability, "projects", { id: "A(iv)", label: "Project Guidance", max: 10, score: projScore }),
- ...summaryRow(applicability, "quals", { id: "A(v)", label: "Qualification Enhancement", max: 10, score: qualScore }),
- ...summaryRow(applicability, "feedback", { id: "A(vi)", label: "Students' Feedback", max: 10, score: fbScore }),
- ...summaryRow(applicability, "deptActs", { id: "A(vii)", label: "Departmental / School Activities", max: 20, score: deptScore }),
- ...summaryRow(applicability, "uniActs", { id: "A(viii)", label: "University Level Activities", max: 30, score: uniScore }),
- ...summaryRow(applicability, "society", { id: "A(ix)", label: "Contribution to Society", max: 10, score: socScore }),
- { id: "A(x)", label: "Annual Confidential Report (ACR)", max: "N/A", score: 0 },
+ ...summaryRow(applicability, "lectures", { id: "A1", label: "Lectures / Tutorials / Practicals", max: 50, score: lecScore }),
+ ...summaryRow(applicability, "courseFile", { id: "A2", label: "Course File", max: 20, score: cfScore }),
+ { id: "A3", label: "Innovative Teaching-Learning Methodologies", max: 10, score: innovScore },
+ ...summaryRow(applicability, "feedback", { id: "A4", label: "Students' Feedback", max: 10, score: fbScore }),
+ { id: "A5", label: "Learning Outcomes Attainment & OBE Practice", max: 20, score: obeScore },
+ ...summaryRow(applicability, "projects", { id: "A6", label: "Student Project Guidance", max: 10, score: projScore }),
+ { id: "A7", label: "Student Mentoring & Counselling", max: 10, score: mentoringScore },
+ ...summaryRow(applicability, "quals", { id: "A8", label: "Qualification Enhancement", max: 10, score: qualScore }),
  { isTotal: true, label: "Part A Total", max: maxScores.partA, score: partATotal },
- { isHeader: true, label: "Part B - Research & Academic Contributions" },
- ...summaryRow(applicability, "journals", { id: "B1(i)", label: "Published Papers in Journals", max: 80, score: b1iScore }),
- ...summaryRow(applicability, "popularWritings", { id: "B1(ii)", label: "Popular Writings, Film & Documentary", max: 40, score: b1iiScore }),
- ...summaryRow(applicability, "books", { id: "B2", label: "Articles / Chapters in Books", max: 60, score: b2Score }),
- ...summaryRow(applicability, "ict", { id: "B3", label: "ICT Mediated Teaching-Learning Pedagogy / New Curricula", max: 30, score: b3Score }),
- ...summaryRow(applicability, "research", { id: "B4(a)", label: "Research Guidance - PhD / PG", max: 30, score: b4aScore }),
- ...summaryRow(applicability, "internalProjects", { id: "B4(b)", label: "Internal Research Projects", max: 15, score: b4bScore }),
- ...summaryRow(applicability, "externalProjects", { id: "B4(c)", label: "External Research Projects", max: 30, score: b4cScore }),
- ...summaryRow(applicability, "awards", { id: "B5", label: "Research Awards", max: 10, score: b5Score }),
- ...summaryRow(applicability, "confs", { id: "B6", label: "Conferences / Seminars / Workshops", max: 30, score: b6Score }),
- ...summaryRow(applicability, "proposals", { id: "B7(a)", label: "Research Proposals", max: 10, score: b7aScore }),
- ...summaryRow(applicability, "products", { id: "B7(b)", label: "Products Developed / Used", max: 20, score: b7bScore }),
- ...b8summaryRow(applicability, { id: "B8", label: "FDP / Self Development + Industrial Training", max: 20, score: b8Score }),
+ { isHeader: true, label: "Part B - Research, Publications & Creative Output" },
+ ...summaryRow(applicability, "journals", { id: "B1", label: "Journal Publications / Academic Research Papers", max: 60, score: b1Score }),
+ ...summaryRow(applicability, "books", { id: "B2", label: "Books, Book Chapters & Edited Volumes", max: 30, score: b2Score }),
+ ...summaryRow(applicability, "popularWritings", { id: "B3", label: "Popular Writing — Newspaper & Magazine Articles, Columns & Reviews", max: 40, score: b3Score }),
+ ...summaryRow(applicability, "externalProjects", { id: "B4", label: "Funded Research / Creative Projects & Grants", max: 20, score: b4Score }),
+ ...summaryRow(applicability, "research", { id: "B5", label: "Research / Creative Guidance", max: 20, score: b5Score }),
+ ...summaryRow(applicability, "consultancy", { id: "B6", label: "Consultancy, Training & Creative Commissions", max: 30, score: b6Score }),
+ ...summaryRow(applicability, "confs", { id: "B7", label: "Conference / FDP / Festival Contributions — Organised", max: 20, score: b7Score }),
+ ...summaryRow(applicability, "fdps", { id: "B8", label: "Conference / FDP / Industry-Studio Training Attended", max: 20, score: b8Score }),
+ ...summaryRow(applicability, "awards", { id: "B9", label: "Research Awards, Fellowships, Reviewer & Citations", max: 20, score: b9Score }),
+ ...summaryRow(applicability, "products", { id: "B10", label: "Innovation, Start-ups & Technology Transfer", max: 20, score: b10Score }),
+ ...summaryRow(applicability, "ict", { id: "B11", label: "ICT Content, MOOCs & E-Learning", max: 40, score: b11Score }),
+ ...summaryRow(applicability, "exhibitions", { id: "B12", label: "Exhibitions — Photography, Documentaries, Films & Audio-Visual", max: 30, score: b12Score }),
  { isTotal: true, label: "Part B Total", max: maxScores.partB, score: partBTotal },
  { isGrandTotal: true, label: "Grand Total (Part A + Part B)", max: maxScores.grand, score: grandTotal },
  ],
  });
  };
 
- const pendingCount = queue.filter((item) =>item.status === "Pending Review").length;
+  const navItems = [
+    ...(canSelfSubmit ? [{ id: "myAppraisal", label: "My Appraisal", sub: "View your self-appraisal form" }] : []),
+    ...(role !== "faculty" ? [{ id: "approvals", label: `Approvals (${pendingCount})`, sub: "Review faculty appraisals" }] : []),
+  ];
 
- return (
-<div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc", fontFamily: "inherit" }}>
-<aside style={{ width: 230, height: "100vh", minHeight: "100vh", position: "sticky", top: 0, alignSelf: "flex-start", boxSizing: "border-box", overflow: "hidden", background: "#0f172a", color: "#f8fafc", padding: "18px 12px", display: "flex", flexDirection: "column", gap: 14, borderRight: "1px solid rgba(255,255,255,0.06)", boxShadow: "2px 0 16px rgba(15,23,42,0.14)" }}>
-<div style={{ borderBottom: "1px solid #1e293b", paddingBottom: 14 }}>
-<div style={{ fontSize: 13, fontWeight: 900 }}>{APP_INFO.PORTAL_NAME}</div>
-<div style={{ color: "#94a3b8", fontSize: 11, marginTop: 3 }}>Media & Communication</div>
-</div>
- {canSelfSubmit && (
-<>
-<button onClick={() =>{ setActiveTab("my"); setReviewing(null); }} style={navButton(activeTab === "my")}>My Appraisal</button>
- {activeTab === "my" && (
-<label style={{ display: "grid", gap: 6, padding: "0 10px 4px 16px", fontSize: 10, color: "#94a3b8", fontWeight: 800 }}>
- Appraisal Section
-<select
- value={selfSectionView}
- onChange={(event) =>handleSelfSectionChange(event.target.value)}
- style={{ height: 34, border: "1px solid #334155", borderRadius: 7, background: "#1e293b", color: "#f8fafc", padding: "0 9px", fontFamily: "inherit", fontSize: 11, fontWeight: 700 }}
- >
- {SECTION_OPTIONS.map((option) =><option key={option.value} value={option.value} disabled={!isSelfSectionOpen(option.value)}>{option.label}</option>)}
-</select>
-</label>
- )}
-</>
- )}
- {role !== "faculty" &&<button onClick={() =>{ setActiveTab("approvals"); setReviewing(null); }} style={navButton(activeTab === "approvals")}>Approvals ({pendingCount})</button>}
-<div style={{ marginTop: "auto", borderTop: "1px solid #1e293b", paddingTop: 12, display: "grid", gap: 10 }}>
-<button
- type="button"
- onClick={() =>navigate("/edit-profile")}
- title="Edit profile"
- style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", padding: 0, width: "100%", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}
- >
-<Avatar initials={userInitials(sessionStorage.getItem("name"))} color={ACCENT} size={34} />
-<div style={{ flex: 1, minWidth: 0 }}>
-<div style={{ color: "#e2e8f0", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
- {(sessionStorage.getItem("name") || "User").split(" ").slice(0, 2).join(" ")}
-</div>
-<div style={{ color: "#475569", fontSize: 9, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
- {roleLabel(role)} {sessionStorage.getItem("department")?.split(" ")[0] || ""}
-</div>
-</div>
-</button>
-<div style={{ margin: "8px 0", padding: "10px 12px", background: "rgba(37,99,235,0.15)", border: "1px solid #2563eb", borderRadius: 8 }}>
-<div style={{ color: "#94a3b8", fontWeight: 700, fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>For any queries</div>
-<a href="mailto:appraisal@dypiu.ac.in" style={{ color: "#60a5fa", fontWeight: 600, fontSize: 11, wordBreak: "break-all", textDecoration: "none" }}>appraisal@dypiu.ac.in</a>
-</div>
-<button
- onClick={() =>setShowLogoutModal(true)}
- style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, background: "none", border: "1px solid #374151", borderRadius: 8, padding: "9px 11px", cursor: "pointer", fontFamily: "inherit" }}
- onMouseEnter={(event) =>{ event.currentTarget.style.background = "#1e293b"; }}
- onMouseLeave={(event) =>{ event.currentTarget.style.background = "none"; }}
- >
-<span style={{ color: "#f87171", fontWeight: 700, fontSize: 12 }}>Logout</span>
-</button>
-</div>
-</aside>
-<main style={{ flex: 1, padding: "20px 24px", overflowX: "auto" }}>
-<div style={{ marginBottom: 16, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
-<div>
-<h2 style={{ margin: 0, color: "#0f172a", fontSize: 21 }}>School of Media & Communication Studies</h2>
-<div style={{ color: "#64748b", fontSize: 12, marginTop: 3 }}>{roleLabel(role)} workflow dashboard</div>
-</div>
-<AppraisalHeaderImage />
-</div>
+  return (
+    <DashboardLayout
+      appInfo={APP_INFO}
+      showLogoutModal={showLogoutModal}
+      onCancelLogout={() => setShowLogoutModal(false)}
+      containerStyle={{ display: "flex", minHeight: "100vh", fontFamily: "inherit", background: "#f8fafc", color: "#111827" }}
+      mainStyle={{ flex: 1, padding: "40px", display: "flex", flexDirection: "column", gap: 24, overflowX: "auto", maxWidth: 1600, margin: "0 auto", width: "100%" }}
+      sidebar={(
+        <DashboardSidebar
+          appInfo={APP_INFO}
+          navItems={navItems}
+          activeTab={activeTab === "my" ? "myAppraisal" : "approvals"}
+          onTabSelect={(tabId) => {
+            if (tabId === "myAppraisal") { setActiveTab("my"); setReviewing(null); }
+            else { setActiveTab("approvals"); setReviewing(null); }
+          }}
+          showSectionSelector={activeTab === "my"}
+          sectionTab={selfSectionView}
+          onSectionChange={handleSelfSectionChange}
+          profileSubtitle={`${roleLabel(role)} ${sessionStorage.getItem("department")?.split(" ")[0] || ""}`}
+          onLogout={() => setShowLogoutModal(true)}
+        />
+      )}
+    >
+      <div style={{ marginBottom: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ background: "#fff", borderRadius: 14, padding: "18px 24px", boxShadow: "0 10px 28px rgba(17,24,39,0.06)", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#111827", letterSpacing: 0, lineHeight: 1.1 }}>School of Media & Communication Studies — My Appraisal Form</h2>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, fontSize: 13, color: "#6b7280", fontWeight: 600, flexWrap: "wrap" }}>
+              <span>{form.info?.name || profile.name || sessionStorage.getItem("name") || "Faculty Member"}</span>
+              <span>•</span>
+              <span>{roleLabel(role)} Workflow Dashboard</span>
+              <span>•</span>
+              <span>Academic Year:</span>
+              <select
+                value={academicYear}
+                onChange={(event) => handleAcademicYearChange(event.target.value)}
+                style={{ height: 32, border: "1px solid #d1d5db", borderRadius: 8, padding: "0 10px", fontSize: 13, fontFamily: "inherit", color: "#374151", background: "#fff", outline: "none", fontWeight: 700 }}
+              >
+                {academicYearOptions.map((cycle) => (
+                  <option key={cycle.academic_year} value={cycle.academic_year}>
+                    {cycle.academic_year} {cycle.is_open ? "(Active)" : "(Closed / Read-Only)"}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <AppraisalHeaderImage height={54} />
+        </div>
+      </div>
 
- {activeTab === "my" && canSelfSubmit && (
+  {activeTab === "my" && canSelfSubmit && (
 <div style={{ display: "grid", gap: 16 }}>
-<WorkflowTracker declaration={declaration} reviews={reviews} profile={{ ...profile, appraisal_role: role }} />
+<div className="appraisal-status-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 344px", gap: 14, alignItems: "stretch" }}>
+  <WorkflowTracker declaration={declaration} reviews={reviews} profile={{ ...profile, school: currentSchoolValue, appraisal_role: role }} />
+  <div className="appraisal-progress-card" style={{ background: "#fff", borderRadius: 14, padding: "18px 22px", boxShadow: "0 10px 28px rgba(17,24,39,0.06)", border: "1px solid #e5e7eb", display: "flex", flexDirection: "column", justifyContent: "center", gap: 10 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+      <div style={{ fontSize: 14, color: "#374151", fontWeight: 800 }}>Overall Progress</div>
+      <div style={{ fontSize: 18, color: "#111827", fontWeight: 900 }}>{Math.round((totals.total / (totals.maxScores?.grand || 700)) * 100)}%</div>
+    </div>
+    <div style={{ height: 10, borderRadius: 999, background: "#e5e7eb", overflow: "hidden" }}>
+      <div style={{ width: `${Math.round((totals.total / (totals.maxScores?.grand || 700)) * 100)}%`, height: "100%", borderRadius: 999, background: "linear-gradient(90deg,#5b5ceb,#7c3aed)", transition: "width 300ms ease" }} />
+    </div>
+    <div style={{ fontSize: 14, color: "#6b7280", fontWeight: 600 }}>{totals.total.toFixed(1)} / {totals.maxScores?.grand || 700} Marks</div>
+  </div>
+</div>
 <RejectionNotice
  declaration={declaration}
  reviews={reviews}
@@ -464,12 +524,58 @@ export default function MediaCommDashboard({ fixedRole }) {
  status={declaration?.status || form.status}
  alertOnceKey={`${userEmail}:${academicYear}:${declaration?.status || form.status || ""}`}
 />
- {locked && (
-<div style={{ background: "#ecfdf5", border: "1px solid #bbf7d0", color: "#166534", borderRadius: 9, padding: "10px 14px", fontSize: 12, fontWeight: 700 }}>
- Submitted and locked for review. Your saved data is visible here, but editing is disabled while authorities review it.
-</div>
- )}
- {(selfSectionView === "partA" || selfSectionView === "partB") && (
+  {locked && (
+    <div style={{ background: workflowRejected ? "#fef2f2" : isSelectedCycleClosed ? "#fbfbfe" : "#ecfdf5", border: `1px solid ${workflowRejected ? "#fecaca" : isSelectedCycleClosed ? "#ddd6fe" : "#bbf7d0"}`, color: workflowRejected ? "#991b1b" : isSelectedCycleClosed ? "#4c1d95" : "#166534", borderRadius: 9, padding: "10px 14px", fontSize: 12, fontWeight: 700 }}>
+      {workflowRejected
+        ? "This appraisal was rejected. Review the approval status in the tracker above."
+        : isSelectedCycleClosed
+          ? `This appraisal form for Academic Year ${academicYear} is closed for editing and displayed in Read-Only mode.`
+          : "Submitted and locked for review. Your saved data is visible here, but editing is disabled while authorities review it."}
+    </div>
+  )}
+
+  {isSelectedCycleClosed ? (
+    <div className="fa-section-card appraisal-section-card" style={{ background: "#fff", borderRadius: 14, boxShadow: "0 18px 50px rgba(17,24,39,0.08)", padding: 24, border: "1px solid #e5e7eb", borderTop: "3px solid #4c1d95" }}>
+      <div style={{ fontWeight: 800, fontSize: 18, color: "#4c1d95", marginBottom: 16 }}>Closed Appraisal Report — {academicYear}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+        {[
+          ["Academic Year", academicYear],
+          ["Submitted Score", `${totals.total.toFixed(1)} / ${totals.maxScores?.grand || 700}`],
+          ["Documents", `${Object.keys(docs).length} file${Object.keys(docs).length === 1 ? "" : "s"}`],
+        ].map(([label, value]) => (
+          <div key={label} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: "12px 14px", background: "#f8fafc" }}>
+            <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
+            <div style={{ marginTop: 5, fontSize: 16, color: "#111827", fontWeight: 900 }}>{value}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
+        <button
+          type="button"
+          onClick={handleGenerateReport}
+          style={{ padding: "10px 28px", background: "#4c1d95", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 14, fontFamily: "inherit" }}
+        >
+          Generate Report
+        </button>
+      </div>
+      <div style={{ marginTop: 22, borderTop: "1px solid #e5e7eb", paddingTop: 18 }}>
+        <div style={{ fontSize: 14, color: "#374151", fontWeight: 900, marginBottom: 12 }}>Attachments</div>
+        {Object.keys(docs).length ? (
+          <div style={{ display: "grid", gap: 10 }}>
+            {Object.keys(docs).map((key) => (
+              <div key={key} style={{ display: "grid", gridTemplateColumns: "minmax(120px, 180px) minmax(0, 1fr)", alignItems: "center", gap: 12, border: "1px solid #e5e7eb", borderRadius: 10, padding: "10px 12px", background: "#fff" }}>
+                <div style={{ fontSize: 12, color: "#475569", fontWeight: 800 }}>{key}</div>
+                <ViewDocsCell docKey={key} docs={docs} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ fontSize: 12, color: "#64748b", fontWeight: 700, padding: "12px 14px", border: "1px solid #e5e7eb", borderRadius: 10, background: "#f8fafc" }}>No attachments found for this closed appraisal year.</div>
+        )}
+      </div>
+    </div>
+  ) : (<>
+ {(selfSectionView === "partA" || selfSectionView === "partB" || selfSectionView === "partC" || selfSectionView === "partD") && (
 <>
 <MediaForm
  form={form}
@@ -479,29 +585,30 @@ export default function MediaCommDashboard({ fixedRole }) {
  mode="self"
  locked={locked}
  sectionView={selfSectionView}
- />
- {!locked && (
+/>
 <SectionSaveFooter
- variant="card"
- label={selfSectionView === "partA" ? "Part A" : "Part B"}
- saved={Boolean(sectionSaveStatus[selfSectionView])}
- saving={savingSection === selfSectionView}
- locked={locked}
- onSave={() =>handleSaveSelfSection(selfSectionView)}
- />
- )}
+ savingSection={savingSection}
+ onSaveSection={handleSaveSelfSection}
+ showNext={selfSectionView !== "partD"}
+ onNext={() =>{
+  if (selfSectionView === "partA") setSelfSectionView("partB");
+  else if (selfSectionView === "partB") setSelfSectionView("partC");
+  else if (selfSectionView === "partC") setSelfSectionView("partD");
+  else if (selfSectionView === "partD") setSelfSectionView("summary");
+ }}
+ disabled={locked}
+/>
 </>
  )}
  {selfSectionView === "summary" && (
 <div style={{ display: "grid", gap: 16 }}>
-<SummaryBox totals={totals} maxScores={totals.maxScores} roleScoreLabel="Faculty/self appraisal score from the Media & Communication form." />
+<SummaryBox totals={totals} maxScores={totals.maxScores} roleScoreLabel="Faculty/self appraisal score from the School of Media & Communication Studies form." />
 <SummaryOtherInfoField
  value={form.summaryOtherInfo}
  onChange={(value) =>setForm((prev) =>({ ...prev, summaryOtherInfo: value }))}
  readOnly={locked}
 />
-<div style={{ display: "grid", gap: 12, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: 16 }}>
- {locked ?<StatusBadge status={declaration?.status || "Submitted"} />: (
+  {locked ?<StatusBadge status={declaration?.status || "Submitted"} />: (
 <>
 <AccuracyCheckbox checked={confirmed} onChange={setConfirmed} />
 <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, color: "#334155", lineHeight: 1.5, padding: "12px 14px", background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, cursor: "pointer" }}>
@@ -518,11 +625,12 @@ export default function MediaCommDashboard({ fixedRole }) {
  {locked ? "Submitted & Locked" : submitting ? "Submitting..." : "Submit Appraisal"}
 </button>
 </div>
+        </div>
+      )}
+    </>
+  )}
 </div>
-</div>
- )}
-</div>
- )}
+  )}
 
  {activeTab === "approvals" && !reviewing && role !== "faculty" && (
 <div>
@@ -623,28 +731,17 @@ export default function MediaCommDashboard({ fixedRole }) {
 </div>
  )}
 
- {activeTab === "approvals" && reviewing && (
+  {activeTab === "approvals" && reviewing && (
 <MediaCommAuthorityReviewPanel
  person={reviewing}
  reviewerRole={role}
  onBack={() =>setReviewing(null)}
  onSubmit={handleSubmitReview}
  readOnly={isReviewerReviewComplete(reviewing, role)}
- />
- )}
-</main>
- {showLogoutModal && (
-<LogoutConfirmModal
- onCancel={() =>setShowLogoutModal(false)}
- onConfirm={() =>{
- setShowLogoutModal(false);
- sessionStorage.clear();
- navigate("/login", { replace: true });
- }}
- />
- )}
-</div>
- );
+/>
+  )}
+    </DashboardLayout>
+  );
 }
 
 const thStyle = { border: "1px solid #334155", padding: "7px 8px", background: "#1e293b", color: "#e2e8f0", fontWeight: 800, textAlign: "center", fontSize: 10, whiteSpace: "nowrap", letterSpacing: "0.3px" };

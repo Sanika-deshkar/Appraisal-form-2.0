@@ -24,9 +24,9 @@ export const FORM_TYPES = {
 };
 
 export const FORM_SCHOOL_CODES = {
-  [FORM_TYPES.DEFAULT]:    ["SoCSEA", "SoCM", "SoBB", "SoMCS", "SoD", "SoAA", "SoCE", "SoEMR", "CISR"],
-  [FORM_TYPES.MEDIA_COMM]: [],
-  [FORM_TYPES.DESIGN_ARTS]: [],
+  [FORM_TYPES.DEFAULT]:    ["SoCSEA", "SoCM", "SoBB", "SoCE", "SoEMR", "CISR"],
+  [FORM_TYPES.MEDIA_COMM]: ["SoMCS"],
+  [FORM_TYPES.DESIGN_ARTS]: ["SoD", "SoAA"],
 };
 
 export const formTypeForSchool = (schoolCode) => {

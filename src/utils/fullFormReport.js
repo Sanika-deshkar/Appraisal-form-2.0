@@ -873,7 +873,7 @@ export const generateStandardReport = async ({
   <h3>(i) Lectures / Tutorials / Practicals (Max 50)</h3>
   <table><tr><th>SN</th><th>Semester</th><th>Course Code/Name</th><th>Classes as per Course Structure</th><th>Classes Actually Conducted</th><th>API Score</th></tr>
   ${lectures.map((l, i) => `<tr><td class="c">${i + 1}</td><td>${l.sem || "&nbsp;"}</td><td>${l.code || "&nbsp;"}</td><td class="c">${l.planned || "&nbsp;"}</td><td class="c">${l.conducted || "&nbsp;"}</td><td class="c">${l.score || "&nbsp;"}</td></tr>`).join("")}
-  <tr class="tr"><td colspan="5" class="c b">Average Score (Max 50)</td><td class="c">${totalLecScore.toFixed(1)}</td></tr></table>
+  <tr class="tr"><td colspan="5" class="c b">Total Score (Max 50)</td><td class="c">${totalLecScore.toFixed(1)}</td></tr></table>
   <h3>(ii) Course File (Max 20)</h3>
   <table><tr><th>SN</th><th>Course/Paper</th><th>Title</th><th>Details</th><th>API Score</th></tr>
   ${courseFile.map((c, i) => `<tr><td class="c">${i + 1}</td><td>${c.course || "&nbsp;"}</td><td>${c.title || "&nbsp;"}</td><td>${c.details || "&nbsp;"}</td><td class="c">${c.score || "&nbsp;"}</td></tr>`).join("")}

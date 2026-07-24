@@ -344,10 +344,10 @@ export const reviewSectionScore = (sectionKey, rows = [], maxScore = 0, scoreKey
  const reviewableRows = rows.filter((row) =>rowHasReviewableData(sectionKey, row));
  if (!reviewableRows.length) return 0;
 
- if (sectionKey === "lectures" || sectionKey === "courseFile" || sectionKey === "feedback") {
- const scoredRows = reviewableRows.filter((row) =>isFilled(row?.[scoreKey]));
+ if (sectionKey === "feedback") {
+ const scoredRows = reviewableRows.filter((row) => isFilled(row?.[scoreKey]));
  if (!scoredRows.length) return 0;
- const total = scoredRows.reduce((sum, row) =>{
+ const total = scoredRows.reduce((sum, row) => {
  const rowMax = reviewRowMaxForSection(sectionKey, row, maxScore);
  return sum + (rowMax ? clampScore(row?.[scoreKey], rowMax) : toNumber(row?.[scoreKey]));
  }, 0);
@@ -394,19 +394,9 @@ const rowHasActiveClaim = (row = {}, keys = []) =>
 const rowDeclinesEvidence = (row = {}, keys = []) =>
  keys.some((key) =>YES_NO_FIELD_NAMES.has(key) && isNoValue(row?.[key]));
 
-export const MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024;
-export const ATTACHMENT_REQUIREMENT_TEXT = "Only image or PDF files up to 10 MB are allowed.";
+export const ATTACHMENT_REQUIREMENT_TEXT = "";
 
-export const isAllowedAttachmentFile = (file = {}) =>{
- const type = String(file.type || "").toLowerCase();
- const name = String(file.name || file.url || "").toLowerCase();
- const size = Number(file.size || 0);
- const validType = type === "application/pdf" ||
- type.startsWith("image/") ||
- /\.(pdf|png|jpe?g|webp|gif|bmp)$/i.test(name);
- const validSize = !size || size<= MAX_ATTACHMENT_SIZE_BYTES;
- return validType && validSize;
-};
+export const isAllowedAttachmentFile = () => true;
 
 export const filesForDocValue = (value) =>
  (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean);
@@ -443,9 +433,7 @@ const docPrefixForSectionLabel = (label = "") =>{
  return "";
 };
 
-const isAverageScoredSectionLabel = (labelText = "") =>
- labelText.includes("course file") ||
- (labelText.includes("lectures") && labelText.includes("tutorials") && labelText.includes("practicals"));
+const isAverageScoredSectionLabel = (labelText = "") => false;
 
 export const validateCompleteRows = (sections = [], defaultDocs) =>{
  const errors = [];
