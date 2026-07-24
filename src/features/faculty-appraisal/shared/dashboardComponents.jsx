@@ -22,18 +22,19 @@ import { clampScore } from "../../../utils/appraisalFormUtils";
 // ---------------------------------------------------------------------------
 // RO — read-only display cell
 // ---------------------------------------------------------------------------
-export function RO({ val, center }) {
+export function RO({ val, value, center, placeholder }) {
+  const actualVal = val !== undefined ? val : value;
   return (
     <span
       style={{
         fontSize: 11,
         fontFamily: "inherit",
-        color: "#1e293b",
+        color: actualVal ? "#1e293b" : "#94a3b8",
         display: "block",
         textAlign: center ? "center" : "left",
       }}
     >
-      {val || <span style={{ color: "#cbd5e1" }}>-</span>}
+      {actualVal || (placeholder ? <span style={{ color: "#94a3b8" }}>{placeholder}</span> : <span style={{ color: "#cbd5e1" }}>-</span>)}
     </span>
   );
 }
@@ -43,6 +44,8 @@ export function RO({ val, center }) {
 // ---------------------------------------------------------------------------
 export function TI({
   val,
+  value,
+  type,
   onChange,
   center,
   placeholder,
@@ -53,12 +56,16 @@ export function TI({
   max,
   deferClampWhileTyping = false,
 }) {
+  const actualVal = val !== undefined ? val : value;
+  const isNumeric = numeric || type === "number" || type === "numeric";
+  const isInteger = integer || type === "integer";
+
   const [textErr, setTextErr] = useState(false);
   const [showFullValue, setShowFullValue] = useState(false);
   const [previewPosition, setPreviewPosition] = useState({ top: 0, left: 0 });
   const inputRef = useRef(null);
-  const displayValue = String(val ?? "");
-  const canShowFullValue = displayValue.trim().length > 0;
+  const displayValue = String(actualVal ?? "");
+  const canShowFullValue = displayValue.trim().length > 35;
 
   const openFullValuePreview = () => {
     if (!canShowFullValue || !inputRef.current) return;
@@ -73,9 +80,9 @@ export function TI({
   const handleChange = (e) => {
     if (readOnly) return;
     let v = e.target.value;
-    if (integer) {
+    if (isInteger) {
       v = v.replace(/[^0-9]/g, "");
-    } else if (numeric) {
+    } else if (isNumeric) {
       v = v
         .replace(/[^0-9.]/g, "")
         .replace(/^\./, "0.")
@@ -95,7 +102,7 @@ export function TI({
   const handleBlur = (e) => {
     if (readOnly || !onChange) return;
     const trimmed = e.target.value.trim();
-    if (numeric && max !== undefined && trimmed !== "") {
+    if (isNumeric && max !== undefined && trimmed !== "") {
       onChange(String(clampScore(trimmed, max)));
     } else if (trimmed !== e.target.value) {
       onChange(trimmed);
@@ -119,7 +126,7 @@ export function TI({
     outline: "none",
     background: readOnly ? "#f9fafb" : "#fcfdff",
     color: "#111827",
-    fontWeight: numeric || center ? 700 : 500,
+    fontWeight: isNumeric || center ? 700 : 500,
     boxShadow: readOnly ? "none" : "inset 0 1px 0 rgba(17,24,39,0.03), 0 1px 2px rgba(17,24,39,0.04)",
   };
 
@@ -132,14 +139,15 @@ export function TI({
     >
       <input
         ref={inputRef}
-        value={val ?? ""}
+        value={actualVal ?? ""}
         disabled={readOnly}
         onChange={handleChange}
         onBlur={handleBlur}
         onFocus={openFullValuePreview}
         onBlurCapture={() => setShowFullValue(false)}
         placeholder={placeholder || ""}
-        inputMode={integer ? "numeric" : numeric ? "decimal" : undefined}
+        title={displayValue}
+        inputMode={isInteger ? "numeric" : isNumeric ? "decimal" : undefined}
         style={center ? { ...baseStyle, textAlign: "center" } : baseStyle}
       />
       {showFullValue && (

@@ -70,23 +70,25 @@ function ProfileLoader() {
         storeUserSession({ profile });
 
         const storedAcademicYear = sessionStorage.getItem("academicYear");
-        let ay = storedAcademicYear || APP_INFO.DEFAULT_AY;
+        let ay = storedAcademicYear;
         let cycles = [];
 
         try {
           const cyclesData = await api.get("/appraisal/cycles");
           cycles = normalizeAcademicYearCycles(cyclesData);
           if (cycles.length) {
-            const matchingCycle = cycles.find((cycle) => cycle.academic_year === storedAcademicYear);
-            const openCycle = cycles.find((cycle) => cycle.is_open);
-            const fallbackCycle = matchingCycle || openCycle || cycles[0];
-            if (fallbackCycle) {
-              ay = fallbackCycle.academic_year;
+            const matchingCycle = storedAcademicYear ? cycles.find((c) => c.academic_year === storedAcademicYear) : null;
+            const openCycle = cycles.find((c) => c.is_open);
+            const defaultCycle = matchingCycle || openCycle || cycles[0];
+            if (defaultCycle) {
+              ay = defaultCycle.academic_year;
             }
           }
         } catch (error) {
           console.error("Could not load academic year cycles, falling back to default:", error);
         }
+
+        if (!ay) ay = APP_INFO.DEFAULT_AY;
 
         sessionStorage.setItem("academicYear", ay);
         sessionStorage.setItem("availableCycles", JSON.stringify(cycles));

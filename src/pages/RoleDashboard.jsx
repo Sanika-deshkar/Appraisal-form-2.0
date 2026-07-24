@@ -3,11 +3,13 @@ import { Navigate } from "react-router-dom";
 import { normalizeRole } from "../auth/session";
 import { departmentHasHod, getDeanTrack } from "../utils/hierarchy";
 import { DEAN_TRACKS, getSchoolKey, isCisrSchool, normalizeHierarchyText } from "../constants/universityHierarchy";
-import { formTypeForSchool } from "../constants/formRouting";
+import { FORM_TYPES, formTypeForSchool } from "../constants/formRouting";
 
 // Each dashboard is its own async chunk - only the one matching the user's role
 // is ever downloaded, cutting the initial JS payload by ~90% vs eager imports.
 const Dashboard                 = lazy(() => import("./Dashboard"));
+const DesignArtsDashboard       = lazy(() => import("./DesignArtsDashboard"));
+const MediaCommDashboard        = lazy(() => import("./MediaCommDashboard"));
 const HODDashboard              = lazy(() => import("./HODDashboard"));
 const CISRFacultyDashboard      = lazy(() => import("./CISRFacultyDashboard"));
 const CISRCenterHeadDashboard   = lazy(() => import("./CISRCenterHeadDashboard"));
@@ -46,6 +48,8 @@ function DashboardSwitch({ role, school, department, formType }) {
     case "faculty":
       if (isCisrSchool(school)) return <CISRFacultyDashboard />;
       if (!formType) return <UnknownSchoolDashboard />;
+      if (formType === FORM_TYPES.MEDIA_COMM) return <MediaCommDashboard />;
+      if (formType === FORM_TYPES.DESIGN_ARTS) return <DesignArtsDashboard />;
       return <Dashboard />;
 
     case "center_head":

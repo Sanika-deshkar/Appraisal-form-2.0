@@ -35,6 +35,7 @@ export default function LecturesTable({ ctx }) {
 <thead><tr>
 <th style={TH}>SN</th><th style={TH}>Semester</th><th style={TH}>Course Code / Name</th>
 <th style={TH}>Classes (as per course structure)</th><th style={TH}>Classes Actually Conducted</th>
+<th style={TH}>% Conducted</th>
 <th style={TH}>View Docs</th>
 <th style={TH}>Faculty Score</th><th style={TH_HOD}>{reviewerScoreLabel}</th>
 </tr></thead>
@@ -46,6 +47,7 @@ export default function LecturesTable({ ctx }) {
 <td style={TD}><RO val={r.code} /></td>
 <td style={TDC}><RO val={r.planned} center /></td>
 <td style={TDC}><RO val={r.conducted} center /></td>
+<td style={TDC}><RO val={r.pctConducted || (Number(r.planned) > 0 && Number(r.conducted) >= 0 ? `${((Number(r.conducted) / Number(r.planned)) * 100).toFixed(1)}%` : "")} center /></td>
 <td style={TDV}><ViewDocsCell docKey={`lec-${i}`} docs={docs} /></td>
 <td style={TDS}><RO val={r.score} center /></td>
 <td style={TDS_HOD}><HodInput val={get("lectures", i, "hod")} onChange={v =>set("lectures", i, "hod", v)} /></td>

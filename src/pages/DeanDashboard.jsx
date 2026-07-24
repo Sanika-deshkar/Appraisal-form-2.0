@@ -455,6 +455,7 @@ function DeanReviewScoreForm({ approval, deanData, setDeanData, sectionView = "p
  { label: "Course Code / Name", render: (r) =>r.code },
  { label: "Classes (as per course structure)", render: (r) =>r.planned, center: true },
  { label: "Classes Actually Conducted", render: (r) =>r.conducted, center: true },
+ { label: "% Conducted", render: (r) =>r.pctConducted || (Number(r.planned) > 0 && Number(r.conducted) >= 0 ? `${((Number(r.conducted) / Number(r.planned)) * 100).toFixed(1)}%` : ""), center: true },
  ]}
  />
 
@@ -722,6 +723,19 @@ function DeanReviewScoreForm({ approval, deanData, setDeanData, sectionView = "p
  { label: "Title", render: (r) =>r.title },
  { label: "Platform / Type", render: (r) =>r.type || r.desc },
  { label: "Reach / Views (if available)", render: (r) =>r.quad || r.reach },
+ ]}
+ />
+
+<ReviewTable
+ title="B12. Exhibitions — Photography, Design & Applied Arts, Documentaries, Films & Audio-Visual Productions"
+ accent="#ec4899"
+ sectionKey="exhibitions"
+ docPrefix="exh"
+ columns={[
+ { label: "Title of Work / Exhibition", render: (r) =>r.title },
+ { label: "Type (Solo/Group/Curated)", render: (r) =>r.type, center: true },
+ { label: "Venue & Level (Institutional/National/Intl.)", render: (r) =>r.venueLevel, center: true },
+ { label: "Date", render: (r) =>r.date, center: true },
  ]}
  />
 </>)}

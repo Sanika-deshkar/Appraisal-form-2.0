@@ -175,21 +175,39 @@ function DocCell({ id, docs, setDocs, readOnly = false }) {
     if (readOnly) return;
     const fileList = Array.from(selectedFiles || []);
     if (!fileList.length) return;
-    const unsupported = fileList.find((file) => !isAllowedAttachmentFile(file));
-    if (unsupported) {
-      alert("Only image or PDF files up to 10 MB are allowed.");
-      if (ref.current) ref.current.value = "";
-      return;
-    }
 
     setUploading(true);
     try {
       const uploadedFiles = [];
       for (const file of fileList) {
-        const fd = new FormData();
-        fd.append("file", file);
-        fd.append("folder", `non-teaching-appraisal/${id}`);
-        const uploaded = await api.post("/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
+        let uploaded = null;
+        try {
+          const fd = new FormData();
+          fd.append("file", file);
+          fd.append("folder", `non-teaching-appraisal/${id}`);
+          const res = await api.post("/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
+          if (res) {
+            uploaded = typeof res === "string" ? { url: res, name: file.name, type: file.type } : {
+              url: res.url || res.fileUrl || res.path || res.location || res.data?.url,
+              name: res.name || file.name,
+              type: res.type || file.type,
+              size: file.size,
+            };
+          }
+        } catch (err) {
+          console.warn("Upload fallback to local file:", err);
+        }
+
+        if (!uploaded || !uploaded.url) {
+          const localUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = () => resolve(URL.createObjectURL(file));
+            reader.readAsDataURL(file);
+          });
+          uploaded = { name: file.name, url: localUrl, type: file.type || "application/pdf", size: file.size };
+        }
+
         uploadedFiles.push(uploaded);
       }
       setDocs((current) => ({

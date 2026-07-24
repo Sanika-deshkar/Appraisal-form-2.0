@@ -630,7 +630,7 @@ export default function StandardMyAppraisal({
     });
   };
 
-  const buildSelfDraftForm = (saveStatus = sectionSaveStatus) => normalizeAutoScores({ info, lectures, courseFile, innovDetails: innovRows.map((row) => row.method).filter(Boolean).join(", "), innovScore: innovScoreComputed, innovRows, projects, obeRows, mentoringRows, quals, feedback, deptActs, uniActs, eventRows, society, industry, alumniRows, placementRows, acr, journals, books, ict, research, projects2, externalProjects, patents, awards, confs, proposals, products, fdps, training, summaryOtherInfo, sectionSaveStatus: saveStatus });
+  const buildSelfDraftForm = (saveStatus = sectionSaveStatus) => normalizeAutoScores({ info, lectures, courseFile, innovDetails: innovRows.map((row) => row.method).filter(Boolean).join(", "), innovScore: innovScoreComputed, innovRows, projects, obeRows, mentoringRows, quals, feedback, deptActs, uniActs, eventRows, society, industry, alumniRows, placementRows, acr, journals, books, ict, research, projects2, externalProjects, patents, awards, confs, proposals, products, fdps, training, exhibitions, summaryOtherInfo, sectionSaveStatus: saveStatus });
 
   const markSnapshotLocked = () => {
     setAppraisalLocked(true);
@@ -1270,6 +1270,7 @@ export default function StandardMyAppraisal({
                             <th style={TH}>Course Code / Name</th>
                             <th style={TH}>Classes (as per course structure)</th>
                             <th style={TH}>Classes Actually Conducted</th>
+                            <th style={TH}>% Conducted</th>
                             <th style={TH}>Attachment</th>
                             <th style={TH}>View Docs</th>
                             <th style={TH}>Score</th>
@@ -1283,13 +1284,21 @@ export default function StandardMyAppraisal({
                               <td style={TD}><TI val={r.code} onChange={(v) => setLec(i, "code", v)} textOnly /></td>
                               <td style={TDC}><TI val={r.planned} onChange={(v) => setLec(i, "planned", v)} center numeric /></td>
                               <td style={TDC}><TI val={r.conducted} onChange={(v) => setLec(i, "conducted", v)} center numeric /></td>
+                              <td style={TDC}>
+                                <TI
+                                  val={r.pctConducted || (Number(r.planned) > 0 && Number(r.conducted) >= 0 ? `${((Number(r.conducted) / Number(r.planned)) * 100).toFixed(1)}%` : "")}
+                                  onChange={(v) => setLec(i, "pctConducted", v)}
+                                  center
+                                  placeholder="%"
+                                />
+                              </td>
                               <td style={TD}><DocCell id={`lec-${i}`} docs={docs} setDocs={setDocs} /></td>
                               <td style={TD}><ViewCell id={`lec-${i}`} docs={docs} /></td>
                               <td style={TDS}><TI val={r.score} onChange={(v) => setLec(i, "score", v)} center numeric max={10} /></td>
                             </tr>
                           ))}
                           <tr style={{ background: "#eff6ff" }}>
-                            <td style={{ ...TDC, fontWeight: "bold" }} colSpan={7}>Total Score (Max 40)</td>
+                            <td style={{ ...TDC, fontWeight: "bold" }} colSpan={8}>Total Score (Max 40)</td>
                             <td style={{ ...TDS, fontWeight: "bold", color: "#1e3a5f" }}>{totalLecScore.toFixed(1)}</td>
                           </tr>
                         </tbody>

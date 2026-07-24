@@ -89,8 +89,8 @@ export const APP_INFO = {
   UNIVERSITY_NAME: "University Name",
   UNIVERSITY_LOCATION: "City, Country",
   get DEFAULT_AY() {
-    if (typeof window === "undefined") return "2025-2026";
-    return sessionStorage.getItem("academicYear") || "2025-2026";
+    if (typeof window === "undefined") return "2026-2027";
+    return sessionStorage.getItem("academicYear") || "2026-2027";
   },
   PORTAL_NAME: "Faculty Appraisal Portal",
   SHORT_NAME: "UNI"

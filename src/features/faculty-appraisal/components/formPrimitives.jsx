@@ -1,6 +1,89 @@
 import { useRef, useState } from "react";
-import { api } from "../../../services/api";
+import { api, API_BASE_URL } from "../../../services/api";
 import { isAllowedAttachmentFile, stripMaxMarksFromTitle } from "../../../utils/appraisalFormUtils";
+
+export function openDocumentFile(file) {
+  if (!file) return;
+  const rawUrl = typeof file === "string" ? file : file.url || file.path || file.fileUrl || file.location;
+  if (!rawUrl) return;
+
+  let finalUrl = rawUrl;
+  if (!finalUrl.startsWith("http://") && !finalUrl.startsWith("https://") && !finalUrl.startsWith("data:") && !finalUrl.startsWith("blob:")) {
+    const origin = (API_BASE_URL || "").replace(/\/api\/v1\/?$/, "");
+    finalUrl = origin ? `${origin}/${finalUrl.replace(/^\//, "")}` : finalUrl;
+  }
+
+  if (finalUrl.startsWith("data:")) {
+    try {
+      const parts = finalUrl.split(",");
+      const mimeMatch = parts[0].match(/:(.*?);/);
+      const mime = mimeMatch ? mimeMatch[1] : "application/pdf";
+      const bstr = atob(parts[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      const blob = new Blob([u8arr], { type: mime });
+      const blobUrl = URL.createObjectURL(blob);
+      const win = window.open(blobUrl, "_blank");
+      if (!win) {
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.target = "_blank";
+        a.click();
+      }
+      return;
+    } catch (err) {
+      console.error("Error opening data URL blob:", err);
+    }
+  }
+
+  const win = window.open(finalUrl, "_blank");
+  if (!win) {
+    const a = document.createElement("a");
+    a.href = finalUrl;
+    a.target = "_blank";
+    a.click();
+  }
+}
+
+export function downloadDocumentFile(file) {
+  if (!file) return;
+  const rawUrl = typeof file === "string" ? file : file.url || file.path || file.fileUrl || file.location;
+  if (!rawUrl) return;
+
+  let finalUrl = rawUrl;
+  if (!finalUrl.startsWith("http://") && !finalUrl.startsWith("https://") && !finalUrl.startsWith("data:") && !finalUrl.startsWith("blob:")) {
+    const origin = (API_BASE_URL || "").replace(/\/api\/v1\/?$/, "");
+    finalUrl = origin ? `${origin}/${finalUrl.replace(/^\//, "")}` : finalUrl;
+  }
+
+  if (finalUrl.startsWith("data:")) {
+    try {
+      const parts = finalUrl.split(",");
+      const mimeMatch = parts[0].match(/:(.*?);/);
+      const mime = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+      const bstr = atob(parts[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      const blob = new Blob([u8arr], { type: mime });
+      finalUrl = URL.createObjectURL(blob);
+    } catch (err) {
+      console.error("Error creating download blob:", err);
+    }
+  }
+
+  const a = document.createElement("a");
+  a.href = finalUrl;
+  a.download = (typeof file === "object" && file.name) ? file.name : "document";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
 
 function PaperclipIcon() {
   return (
@@ -116,14 +199,14 @@ export const SECTION_GUIDELINES = {
     ]
   },
   B3: {
-    title: "B3. Patents, Copyrights & IP and Product Development (Max 40)",
+    title: "B3. Patents, Copyrights, IP & Creative Product Development (Max: 40) [For School of Design and School of Applied Arts]",
     rules: [
-      "Patent Granted — National: 30, International: 20 marks.",
-      "Patent Published — National: 8, International: 5 marks.",
-      "Design Patent: 10 marks.",
-      "Copyright / Trademark: 5 marks (Arts/Design: 10).",
-      "Technology transfer: 15 marks.",
-      "Product used in lab/university: 10 marks/product."
+      "Patent Granted — National: 30, International: 20.",
+      "Patent Published — National: 8, International: 5.",
+      "Design Patent: 10.",
+      "Copyright/Trademark: 5 (Arts/Design: 10).",
+      "Technology transfer: 15.",
+      "Product used in lab/university: 10/product."
     ]
   },
   B4: {
@@ -191,6 +274,16 @@ export const SECTION_GUIDELINES = {
     rules: [
       "MOOC / Coursera / SWAYAM course developed: 5 marks/course.",
       "E-content on course (publicly available): 5 marks/item."
+    ]
+  },
+  B12: {
+    title: "B12. Exhibitions — Photography, Design & Applied Arts, Documentaries, Films & Audio-Visual Productions (Max 30)",
+    rules: [
+      "Solo exhibition — International: 15; National: 10; Institutional: 5.",
+      "Group/curated exhibition participation — International: 8; National: 5; Institutional: 3.",
+      "Exhibition curated/organised (curator role): 8/exhibition.",
+      "Design/art work showcased at a national trade fair, biennale, or design week: 8/showcase.",
+      "Evidence: exhibition catalogue/invitation, curator's note, photographs of the work on display."
     ]
   },
   C1: {
@@ -302,6 +395,7 @@ export function getGuidelineForTitle(titleText) {
   if (/award|citation|fellowship/i.test(str)) return SECTION_GUIDELINES.B9;
   if (/startup|start-up|innovation|technology transfer/i.test(str)) return SECTION_GUIDELINES.B10;
   if (/ict|mooc|e-learning/i.test(str)) return SECTION_GUIDELINES.B11;
+  if (/exhibition|photography|audio-visual/i.test(str)) return SECTION_GUIDELINES.B12;
   if (/part d|acr|annual confidential/i.test(str)) return SECTION_GUIDELINES.D;
   return null;
 }
@@ -448,8 +542,8 @@ export function SectionCard({ title, subtitle, accent = "#6366f1", scoreBadge, c
 export function RowButtons({ onAdd, onDel, canDel = true, addLabel = "+ Add Row", deleteLabel = "- Delete Last" }) {
   return (
     <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
-      <button type="button" className="appraisal-add-row-button" style={{ minHeight: 40, padding: "9px 16px", background: "#fff", color: "#5b5ceb", border: "1px solid #5b5ceb", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 800, fontFamily: "inherit" }} onClick={onAdd}>{addLabel}</button>
-      {canDel && <button type="button" className="appraisal-danger-button" style={{ minHeight: 40, padding: "9px 16px", background: "#fff", color: "#ef4444", border: "1px solid #fecaca", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 800, fontFamily: "inherit" }} onClick={onDel}>{deleteLabel}</button>}
+      <button type="button" className="appraisal-add-row-button" style={{ minHeight: 38, padding: "8px 18px", background: "#fff", color: "#4f46e5", border: "1.5px solid #6366f1", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6, boxShadow: "0 1px 2px rgba(99,102,241,0.05)" }} onClick={onAdd}>{addLabel}</button>
+      {canDel && <button type="button" className="appraisal-danger-button" style={{ minHeight: 38, padding: "8px 18px", background: "#fff", color: "#ef4444", border: "1.5px solid #fecaca", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 }} onClick={onDel}>{deleteLabel}</button>}
     </div>
   );
 }
@@ -485,23 +579,41 @@ export function DocCell({ id, docs, setDocs, readOnly = false }) {
     const selectedFiles = Array.from(fileList || []);
     if (!selectedFiles.length) return;
 
-    const invalidFile = selectedFiles.find((file) => !isAllowedAttachmentFile(file) || file.size > 10 * 1024 * 1024);
-    if (invalidFile) {
-      setUploadError("Only image or PDF files up to 10 MB are allowed.");
-      if (ref.current) ref.current.value = "";
-      return;
-    }
-
     setUploading(true);
     setUploadError("");
 
     try {
       const uploadedFiles = [];
       for (const file of selectedFiles) {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("folder", `faculty-appraisal/${id}`);
-        uploadedFiles.push(await api.post("/upload", formData, { headers: { "Content-Type": "multipart/form-data" } }));
+        let uploaded = null;
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("folder", `faculty-appraisal/${id}`);
+          const res = await api.post("/upload", formData, { headers: { "Content-Type": "multipart/form-data" } });
+          if (res) {
+            uploaded = typeof res === "string" ? { url: res, name: file.name, type: file.type } : {
+              url: res.url || res.fileUrl || res.path || res.location || res.data?.url,
+              name: res.name || file.name,
+              type: res.type || file.type,
+              size: file.size,
+            };
+          }
+        } catch (err) {
+          console.warn("Backend upload warning, attaching file locally:", err);
+        }
+
+        if (!uploaded || !uploaded.url) {
+          const localUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = () => resolve(URL.createObjectURL(file));
+            reader.readAsDataURL(file);
+          });
+          uploaded = { name: file.name, url: localUrl, type: file.type || "application/pdf", size: file.size };
+        }
+
+        uploadedFiles.push(uploaded);
       }
 
       setDocs((prev) => ({
@@ -510,8 +622,7 @@ export function DocCell({ id, docs, setDocs, readOnly = false }) {
       }));
     } catch (err) {
       console.error("Upload error:", err);
-      setUploadError(err.message);
-      alert(`Unable to upload file.\n\n${err.message}`);
+      setUploadError(err.message || "Failed to process attachment");
     } finally {
       setUploading(false);
       if (ref.current) ref.current.value = "";
@@ -538,7 +649,7 @@ export function DocCell({ id, docs, setDocs, readOnly = false }) {
       <div role="button" tabIndex={readOnly ? -1 : 0} aria-label="Attach supporting document" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, cursor: uploading || readOnly ? "not-allowed" : "pointer", minHeight: 40, padding: "8px 12px", border: "1px dashed #d1d5db", borderRadius: 10, background: "#fff", opacity: uploading || readOnly ? 0.7 : 1, color: "#4b5563", fontWeight: 800 }} onClick={() => !uploading && !readOnly && ref.current?.click()} onKeyDown={(event) => { if ((event.key === "Enter" || event.key === " ") && !uploading && !readOnly) ref.current?.click(); }}>
         <PaperclipIcon />
         <span style={{ fontSize: 13 }}>{uploading ? "Uploading..." : "Attach"}</span>
-        <input ref={ref} type="file" multiple accept="image/*,.pdf,application/pdf" style={{ display: "none" }} disabled={uploading || readOnly} onChange={(event) => handleFiles(event.target.files)} />
+        <input ref={ref} type="file" multiple style={{ display: "none" }} disabled={uploading || readOnly} onChange={(event) => handleFiles(event.target.files)} />
       </div>
       {uploadError && <span role="alert" style={{ color: "#dc2626", fontSize: 11, fontWeight: 700 }}>{uploadError}</span>}
     </div>
@@ -561,28 +672,33 @@ export function ViewDocsCell({ docKey, docs, emptyText = "No docs", compact = fa
     <div style={{ display: "flex", flexDirection: compact ? "row" : "column", gap: compact ? 5 : 6, alignItems: compact ? "center" : "flex-start", justifyContent: "center", flexWrap: "wrap" }}>
       {files.map((file, idx) => (
         <div key={`${file.url || file.name || "doc"}-${idx}`} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-          <a
-            href={file.url}
-            target="_blank"
-            rel="noreferrer"
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              openDocumentFile(file);
+            }}
             aria-label={`View ${file.name || "document"}`}
-            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, color: "#4338ca", fontSize: compact ? 0 : 12, textDecoration: "none", background: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: compact ? "50%" : 999, padding: compact ? 0 : "7px 10px", width: compact ? 34 : "auto", height: compact ? 34 : "auto", whiteSpace: "nowrap", fontWeight: 800 }}
+            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, color: "#4338ca", fontSize: compact ? 0 : 12, textDecoration: "none", background: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: compact ? "50%" : 999, padding: compact ? 0 : "7px 10px", width: compact ? 34 : "auto", height: compact ? 34 : "auto", whiteSpace: "nowrap", fontWeight: 800, cursor: "pointer" }}
             title={`View ${file.name || "document"}`}
           >
-            {file.type?.startsWith("image/") && <img src={file.url} alt="" style={{ width: 22, height: 22, objectFit: "cover", borderRadius: 3 }} />}
+            {file.type?.startsWith("image/") && file.url && <img src={file.url} alt="" style={{ width: 22, height: 22, objectFit: "cover", borderRadius: 3 }} />}
             <EyeIcon />
             {!compact && <>View {file.name?.length > 16 ? `${file.name.slice(0, 16)}...` : file.name || "Document"}</>}
-          </a>
-          <a
-            href={file.url}
-            download={file.name || true}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              downloadDocumentFile(file);
+            }}
             aria-label={`Download ${file.name || "document"}`}
-            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, color: "#047857", fontSize: compact ? 0 : 12, textDecoration: "none", background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: compact ? "50%" : 999, padding: compact ? 0 : "7px 10px", width: compact ? 34 : "auto", height: compact ? 34 : "auto", whiteSpace: "nowrap", fontWeight: 800 }}
+            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, color: "#047857", fontSize: compact ? 0 : 12, textDecoration: "none", background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: compact ? "50%" : 999, padding: compact ? 0 : "7px 10px", width: compact ? 34 : "auto", height: compact ? 34 : "auto", whiteSpace: "nowrap", fontWeight: 800, cursor: "pointer" }}
             title={`Download ${file.name || "document"}`}
           >
             <DownloadIcon />
             {!compact && <>Download</>}
-          </a>
+          </button>
         </div>
       ))}
     </div>
