@@ -47,8 +47,8 @@ import { T, TH, TD, TDC } from "../../../features/faculty-appraisal/components/f
 import { Avatar, ScoreBar, ReviewMetricsStrip, LogoutConfirmModal } from "../../../components/dashboard/dashboardPrimitives";
 import { FacultyRecordHeader, ScoreTable, VCFinalRemarks, FinalSubmitButton, FACULTY_RECORD_THEME } from "../../../components/dashboard/FacultyAppraisalRecord";
 import TeachingPartDReviewDashboard, { isPartDReviewed } from "./TeachingPartDReviewDashboard";
-import { ReportBugButton } from "../../../components/dashboard/ReportBugModal";
-import NoticesBell from "../../../components/dashboard/NoticesBell";
+import DashboardLayout from "../../../components/dashboard/DashboardLayout";
+import DashboardSidebar from "../../../components/dashboard/DashboardSidebar";
 
 const ACCENT = "#1d4ed8";
 const REG_ACCENT = "#155e75";
@@ -548,8 +548,15 @@ const APPROVAL_STEP_TONE = {
   [WORKFLOW_STATUSES.SKIPPED]: { emoji: "➖", bg: "#f8fafc", color: "#94a3b8", border: "#e2e8f0", chip: "#f1f5f9", label: "Skipped" },
 };
 
-function NonTeachingApprovalTracker({ workflow }) {
+function NonTeachingApprovalTracker({ workflow, submitterRole }) {
   const steps = workflow?.steps || [];
+  // The initial step is whoever actually submitted this appraisal — Staff,
+  // Reporting Officer, or Registrar can each be the originator (their own
+  // self-appraisal), not just Staff. This used to always say "Staff
+  // Submission" regardless of who the submitter really was, which was
+  // outright wrong whenever a Reporting Officer or Registrar viewed their
+  // own tracker (e.g. Registrar's own chain is just Registrar -> VC).
+  const submissionLabel = `${nonTeachingRoleLabel(submitterRole) || "Staff"} Submission`;
   const notStartedYet = !steps.length || steps[0]?.status === WORKFLOW_STATUSES.DRAFT;
 
   if (notStartedYet) {
@@ -601,7 +608,7 @@ function NonTeachingApprovalTracker({ workflow }) {
                 <span>{tone.label}</span>
               </div>
               <div style={{ marginTop: 6, fontSize: 12, fontWeight: 800, color: "#0f172a", lineHeight: 1.18 }}>
-                {step.isInitial ? "Staff Submission" : step.designation}
+                {step.isInitial ? submissionLabel : step.designation}
               </div>
               <div style={{ marginTop: 4, fontSize: 10, color: "#64748b", lineHeight: 1.25 }}>
                 {step.reviewedAt ? new Date(step.reviewedAt).toLocaleString() : "No timestamp yet"}
@@ -783,11 +790,22 @@ function NonTeachingPreviousYearReportCard({ recordFound, form, academicYear, on
 const resolveNonTeachingWorkflow = (liveWorkflow, itemOrForm) =>
   liveWorkflow?.approvalSteps?.length ? liveWorkflow : nonTeachingWorkflowFor(itemOrForm);
 
-export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role"), embedded = false }) {
+export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role"), embedded = false, sectionTab, onSectionTabChange }) {
   const normalizedRole = normalizeNonTeachingRole(role, "non_teaching_staff");
   const navigate = useNavigate();
   const [form, setForm] = useState(() => emptyNonTeachingForm(profileFromsessionStorage(), normalizedRole));
-  const [tab, setTab] = useState("info");
+  // Every other appraisal form (Standard, Creative, Dynamic) switches parts via
+  // the shared DashboardSidebar's "My Appraisal Section" dropdown, controlled by
+  // sectionTab/onSectionTabChange props from the parent dashboard — never an
+  // inline tab row in the content area. When a parent supplies those props
+  // (NonTeachingReviewDashboard now does), defer to them instead of keeping a
+  // second, separate notion of "current tab"; fall back to internal state (and
+  // the inline buttons below) only for the standalone, non-embedded route that
+  // has no such sidebar to control it.
+  const [internalTab, setInternalTab] = useState("info");
+  const isControlled = sectionTab !== undefined;
+  const tab = isControlled ? sectionTab : internalTab;
+  const setTab = (next) => (isControlled ? onSectionTabChange?.(next) : setInternalTab(next));
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
@@ -1053,7 +1071,7 @@ export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role")
           {showAsHistorical ? (
             <>
               <div style={{ marginBottom: 16 }}>
-                <NonTeachingApprovalTracker workflow={workflow} />
+                <NonTeachingApprovalTracker workflow={workflow} submitterRole={normalizedRole} />
               </div>
               <NonTeachingClosedYearNotice academicYear={selectedAcademicYear} />
               <NonTeachingPreviousYearReportCard recordFound={recordFound} form={form} academicYear={selectedAcademicYear} onReport={handleReport} />
@@ -1061,26 +1079,28 @@ export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role")
           ) : (
           <>
           <div className="appraisal-status-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 316px", gap: 12, alignItems: "stretch", marginBottom: 16 }}>
-            <NonTeachingApprovalTracker workflow={workflow} />
+            <NonTeachingApprovalTracker workflow={workflow} submitterRole={normalizedRole} />
             <NonTeachingProgressCard totals={calculateNonTeachingTotals(form, "self")} max={NON_TEACHING_MAX} />
           </div>
 
-          <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
-            {[
-              ["info", "General Information"],
-              ["partA", "Part A"],
-              ["summary", "Summary"],
-            ].map(([id, label]) => (
-              <button key={id} onClick={() => {
-                setTab(id);
-                requestAnimationFrame(() => {
-                  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-                });
-              }} style={{ border: "none", borderRadius: 7, padding: "8px 16px", background: tab === id ? accent : "#e2e8f0", color: tab === id ? "#fff" : "#475569", fontFamily: "inherit", fontWeight: 800, cursor: "pointer", fontSize: 12 }}>
-                {label}
-              </button>
-            ))}
-          </div>
+          {!isControlled && (
+            <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+              {[
+                ["info", "General Information"],
+                ["partA", "Part A"],
+                ["summary", "Summary"],
+              ].map(([id, label]) => (
+                <button key={id} onClick={() => {
+                  setTab(id);
+                  requestAnimationFrame(() => {
+                    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+                  });
+                }} style={{ border: "none", borderRadius: 7, padding: "8px 16px", background: tab === id ? accent : "#e2e8f0", color: tab === id ? "#fff" : "#475569", fontFamily: "inherit", fontWeight: 800, cursor: "pointer", fontSize: 12 }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
 
           <RejectionNotice
             form={form}
@@ -1755,9 +1775,15 @@ function NonTeachingReviewCard({ item, reviewerRole, accent = ACCENT, onOpen }) 
   );
 }
 
+const SELF_SECTION_OPTIONS = [
+  ["info", "General Information"],
+  ["partA", "Part A"],
+  ["summary", "Summary"],
+];
+
 export function NonTeachingReviewDashboard({ reviewerRole, title, subtitle, accent = ACCENT, showPartD = false }) {
-  const navigate = useNavigate();
   const [tab, setTab] = useState("review");
+  const [selfSectionTab, setSelfSectionTab] = useState("info");
   const [items, setItems] = useState([]);
   const [selectedId, setSelectedId] = useState("");
   const [loading, setLoading] = useState(true);
@@ -1843,97 +1869,39 @@ export function NonTeachingReviewDashboard({ reviewerRole, title, subtitle, acce
   ];
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", background: "#f1f5f9", color: "#0f172a", fontFamily: "inherit" }}>
-      <aside className="appraisal-sidebar" style={{ width: 272, height: "100vh", position: "fixed", left: 0, top: 0, zIndex: 20, boxSizing: "border-box", overflow: "hidden", background: "linear-gradient(180deg,#0b1120 0%,#0f172a 58%,#0b1120 100%)", color: "#e2e8f0", display: "flex", flexDirection: "column", padding: "20px 14px", gap: 14, borderRight: "1px solid rgba(148,163,184,0.12)", boxShadow: "14px 0 32px rgba(2,6,23,0.35)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "2px 2px 4px" }}>
-          <div style={{ width: 44, height: 44, borderRadius: 14, background: "linear-gradient(135deg,#6366f1 0%,#4338ca 100%)", border: "1px solid rgba(199,210,254,0.35)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f8fafc", fontWeight: 900, fontSize: 13, boxShadow: "0 10px 22px rgba(79,70,229,0.38), 0 0 0 3px rgba(99,102,241,0.10)" }}>FA</div>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ color: "#f8fafc", fontWeight: 900, fontSize: 13.5, lineHeight: 1.2 }}>{APP_INFO.PORTAL_NAME}</div>
-            <div style={{ color: "#7c8698", fontSize: 10, lineHeight: 1.3, marginTop: 3 }}>{APP_INFO.UNIVERSITY_NAME}</div>
-          </div>
-        </div>
-        <div style={{ height: 1, background: "linear-gradient(90deg,transparent,rgba(148,163,184,0.22) 20%,rgba(148,163,184,0.22) 80%,transparent)" }} />
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, minHeight: 0 }}>
-          <div style={{ padding: "0 4px", fontSize: 9.5, fontWeight: 800, color: "#5b667a", textTransform: "uppercase", letterSpacing: 1.1 }}>Menu</div>
-          <nav style={{ display: "grid", gap: 5 }} aria-label="Dashboard sections">
-          {navItems.map((navItem) => {
-            const isActive = tab === navItem.id;
-            return (
-              <button
-                key={navItem.id}
-                type="button"
-                className={isActive ? "is-active" : ""}
-                onClick={() => {
-                  setTab(navItem.id);
-                  requestAnimationFrame(() => {
-                    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-                  });
-                }}
-                onMouseEnter={(event) => {
-                  if (!isActive) event.currentTarget.style.background = "rgba(255,255,255,0.045)";
-                }}
-                onMouseLeave={(event) => {
-                  if (!isActive) event.currentTarget.style.background = "transparent";
-                }}
-                style={{ position: "relative", background: isActive ? "rgba(255,255,255,0.09)" : "transparent", border: "1px solid transparent", borderRadius: 13, padding: "10px 12px 10px 15px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, width: "100%", fontFamily: "inherit", transition: "background 0.15s ease", overflow: "hidden" }}
-              >
-                <span aria-hidden="true" style={{ position: "absolute", left: 0, top: isActive ? 6 : "50%", bottom: isActive ? 6 : "50%", width: 3, borderRadius: 999, background: isActive ? "#f8fafc" : "transparent", transition: "background 0.15s ease" }} />
-                <span style={{ position: "relative", width: 34, height: 34, borderRadius: 11, background: isActive ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.05)", border: isActive ? "1px solid rgba(255,255,255,0.22)" : "1px solid rgba(255,255,255,0.08)", color: isActive ? "#f8fafc" : "#8b96a8", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s ease, border-color 0.15s ease" }}>
-                  {navItem.icon}
-                </span>
-                <div style={{ position: "relative", flex: 1, minWidth: 0, textAlign: "left" }}>
-                  <div style={{ color: isActive ? "#f8fafc" : "#c7cedb", fontWeight: isActive ? 900 : 700, fontSize: 12.5, lineHeight: 1.15 }}>{navItem.label}</div>
-                  <div style={{ color: isActive ? "#a8b2c4" : "#6b7686", fontSize: 10.5, marginTop: 3, lineHeight: 1.3 }}>{navItem.sub}</div>
-                </div>
-                {navItem.badge > 0 && (
-                  <div style={{ position: "relative", background: isActive ? "#f8fafc" : "rgba(255,255,255,0.08)", color: isActive ? "#0f172a" : "#c7cedb", border: isActive ? "none" : "1px solid rgba(255,255,255,0.12)", fontWeight: 900, fontSize: 10, minWidth: 20, height: 20, borderRadius: 999, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 5px", flexShrink: 0 }}>{navItem.badge}</div>
-                )}
-              </button>
-            );
-          })}
-          </nav>
-        </div>
-
-        <div style={{ flex: 1 }} />
-        <div style={{ height: 1, background: "linear-gradient(90deg,transparent,rgba(148,163,184,0.22) 20%,rgba(148,163,184,0.22) 80%,transparent)" }} />
-        <div style={{ width: "100%", minWidth: 0, boxSizing: "border-box", overflow: "hidden", padding: 10, borderRadius: 26, background: "linear-gradient(180deg,rgba(30,41,59,0.86),rgba(15,23,42,0.92))", border: "1px solid rgba(148,163,184,0.18)", boxShadow: "0 18px 34px rgba(2,6,23,0.28), inset 0 1px 0 rgba(255,255,255,0.05)", display: "grid", gap: 9 }}>
-
-        <button
-          type="button"
-          onClick={() => navigate("/edit-profile")}
-          title="Edit profile"
-          style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 17, padding: "7px 8px", width: "100%", minWidth: 0, boxSizing: "border-box", overflow: "hidden", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}
-        >
-          <Avatar
-            initials={initials(sessionStorage.getItem("name") || title)}
-            src={sessionStorage.getItem("profilePictureUrl") || sessionStorage.getItem("profile_picture_url") || sessionStorage.getItem("avatarUrl") || ""}
-            color={accent}
-            size={42}
-          />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ color: "#f9fafb", fontSize: 13, fontWeight: 900, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
-            <div style={{ color: "#a8b3c7", fontSize: 10.5, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{subtitle}</div>
-          </div>
-          <ProfileNavIcon />
-        </button>
-
-        <div style={{ display: "flex", gap: 8, width: "100%" }}>
-          <NoticesBell style={{ flex: 1, height: 42, borderRadius: 16, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} />
-          <ReportBugButton iconOnly style={{ flex: 1, height: 42, borderRadius: 16, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit" }} />
-        </div>
-        <div style={S.sideActions}>
-          <button type="button" onClick={() => setShowLogoutModal(true)} style={S.sideButton}>
-            <LogoutButtonIcon />
-            <span>Logout</span>
-          </button>
-        </div>
-        </div>
-      </aside>
-
-      <main style={{ flex: 1, minWidth: 0, marginLeft: 272, padding: "22px 26px", overflowX: "auto", position: "relative" }}>
+    <DashboardLayout
+      appInfo={APP_INFO}
+      showLogoutModal={showLogoutModal}
+      onCancelLogout={() => setShowLogoutModal(false)}
+      containerStyle={{ display: "flex", minHeight: "100vh", fontFamily: "inherit", background: "#f1f5f9", color: "#0f172a" }}
+      mainStyle={{ flex: 1, minWidth: 0, padding: "22px 26px", overflowX: "auto", position: "relative" }}
+      sidebar={(
+        <DashboardSidebar
+          appInfo={APP_INFO}
+          navItems={navItems}
+          activeTab={tab}
+          onTabSelect={(nextTab) => {
+            setTab(nextTab);
+            requestAnimationFrame(() => {
+              window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+            });
+          }}
+          showSectionSelector={tab === "self"}
+          sectionTab={selfSectionTab}
+          onSectionChange={(next) => {
+            setSelfSectionTab(next);
+            requestAnimationFrame(() => {
+              window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+            });
+          }}
+          customSectionOptions={SELF_SECTION_OPTIONS}
+          profileSubtitle={subtitle}
+          onLogout={() => setShowLogoutModal(true)}
+        />
+      )}
+    >
         {tab === "self" ? (
-          <NonTeachingAppraisalForm role={reviewerRole} embedded />
+          <NonTeachingAppraisalForm role={reviewerRole} embedded sectionTab={selfSectionTab} onSectionTabChange={setSelfSectionTab} />
         ) : tab === "partD" ? (
           <TeachingPartDReviewDashboard
             accent={accent}
@@ -2014,10 +1982,7 @@ export function NonTeachingReviewDashboard({ reviewerRole, title, subtitle, acce
             }}
           />
         )}
-      </main>
-
-      {showLogoutModal && <LogoutConfirmModal portalName={APP_INFO.PORTAL_NAME} onCancel={() => setShowLogoutModal(false)} onConfirm={() => { clearUserSession(); navigate("/login", { replace: true }); }} />}
-    </div>
+    </DashboardLayout>
   );
 }
 

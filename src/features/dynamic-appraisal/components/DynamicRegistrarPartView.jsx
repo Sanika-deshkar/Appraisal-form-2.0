@@ -57,9 +57,14 @@ function ReadOnlyTable({ field, rows, docs }) {
 }
 
 export default function DynamicRegistrarPartView({ part, form, docs, subject }) {
-  return <div style={{ display: 'grid', gap: 16 }}>
+  // minWidth: 0 on the grid/its row items is required here, not decorative —
+  // without it a wide table's intrinsic content width forces this whole grid
+  // (and every fixed-width ancestor up to the page) to grow to match instead
+  // of letting the table's own overflowX:auto scrollbar contain it, which is
+  // what was pushing the page into horizontal scroll.
+  return <div style={{ display: 'grid', gap: 16, minWidth: 0 }}>
     <RegistrarStatusBanner subject={subject} />
-    {part.fields.map((field, index) => <section key={field.key || index}>
+    {part.fields.map((field, index) => <section key={field.key || index} style={{ minWidth: 0 }}>
       <div className="appraisal-subsection-title" style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#4338ca', fontWeight: 800, marginBottom: 8 }}>
         <span className="appraisal-subsection-icon"><ClipboardList size={18} /></span>
         <span>{field.label || field.recordTitle || field.key}</span>

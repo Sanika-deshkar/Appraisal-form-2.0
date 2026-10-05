@@ -150,6 +150,9 @@ export function TI({
     let v = e.target.value;
     if (isInteger) {
       v = v.replace(/[^0-9]/g, "");
+      if (v !== "" && max !== undefined) {
+        v = String(clampScore(v, max));
+      }
     } else if (isNumeric) {
       v = v
         .replace(/[^0-9.]/g, "")
@@ -170,7 +173,7 @@ export function TI({
   const handleBlur = (e) => {
     if (readOnly || !onChange) return;
     const trimmed = e.target.value.trim();
-    if (isNumeric && max !== undefined && trimmed !== "") {
+    if ((isNumeric || isInteger) && max !== undefined && trimmed !== "") {
       onChange(String(clampScore(trimmed, max)));
     } else if (trimmed !== e.target.value) {
       onChange(trimmed);

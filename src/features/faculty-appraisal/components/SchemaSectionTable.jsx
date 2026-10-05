@@ -371,7 +371,7 @@ export function SchemaFieldCell({ field, value, onChange, mode = "self", readOnl
     case "number":
       return <TI val={value} onChange={onChange} numeric center={center} readOnly={disabled} max={field?.maxMarks} />;
     case "integer":
-      return <TI val={value} onChange={onChange} integer center={center} readOnly={disabled} />;
+      return <TI val={value} onChange={onChange} integer center={center} readOnly={disabled} max={field?.maxMarks} />;
     case "date":
       return (
         <TI
@@ -470,7 +470,7 @@ function SchemaTableField({ field, rows, onRowsChange, mode, reviewerRole, revie
   const addRow = () => onRowsChange([...safeRows, blankRow()]);
   const deleteLastRow = () => onRowsChange(safeRows.length > 1 ? safeRows.slice(0, -1) : safeRows);
 
-  const scoreColumn = columns.find((c) => c.type === "computed" || c.type === "number");
+  const scoreColumn = columns.find((c) => c.type === "computed" || c.type === "number" || c.type === "integer");
   const roleStyle = REVIEW_ROLE_STYLE[reviewerRole] || REVIEW_ROLE_STYLE.director;
   const snWidth = field?.autoSerial ? 30 : 0;
   const dataColWidth = columns.length ? `calc((100% - ${snWidth}px) / ${columns.length})` : undefined;
@@ -550,7 +550,7 @@ function SchemaTableField({ field, rows, onRowsChange, mode, reviewerRole, revie
                     <ReviewScoreInput
                       val={row[`review_${reviewerRole}`]}
                       onChange={(v) => setReview(i, v)}
-                      max={reviewMax ?? scoreColumn?.maxMarks}
+                      max={scoreColumn?.maxMarks ?? reviewMax}
                       role={reviewerRole}
                       disabled={locked || (rowDisabled ? rowDisabled(row, i) : false)}
                     />

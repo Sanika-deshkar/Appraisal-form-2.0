@@ -20,7 +20,7 @@ import FacultyInfoSection from '../../../components/appraisal/common/FacultyInfo
 import { useReviewFeedback } from '../../../components/reviewFeedbackContext';
 import { fetchDynamicFormSchema } from '../services/dynamicFormSchemaCache';
 import DynamicRegistrarPartView from './DynamicRegistrarPartView';
-import { canReviewerRejectProfile, roleLabel, getReviewChain } from '../../../utils/hierarchy';
+import { canReviewerRejectProfile, roleLabel, visiblePreviousReviewRoles } from '../../../utils/hierarchy';
 import { dynamicReviewForm } from '../../../utils/dynamicAppraisalData';
 import { buildSchemaPreview, schemaTableGuideline } from '../../../utils/schemaPreview';
 import { schemaTableScore } from '../../../utils/schemaTableScore';
@@ -199,9 +199,11 @@ export default function DynamicAuthorityReviewPanel({ subject, onBack, onSubmit,
   const subjectDepartment = subject.department || response.payload?.submitter_profile?.department
     || response.payload?.submitterProfile?.department || form.info?.department || '';
   const subjectProfile = { school: subjectSchool, department: subjectDepartment, appraisal_role: subject.appraisalRole || subject.appraisal_role || subject.role };
-  const reviewChain = getReviewChain(subjectProfile);
-  const chainIndex = reviewChain.indexOf(reviewerRole);
-  const previousRoles = chainIndex > 0 ? reviewChain.slice(0, chainIndex) : [];
+  // Only the VC gets to see earlier reviewers' scores — same rule as the
+  // hardcoded Standard/Creative forms (visiblePreviousReviewRoles returns []
+  // for every role except vc), so e.g. a Director reviewing after the HOD
+  // never sees the HOD's marks, only the faculty's own self-score.
+  const previousRoles = visiblePreviousReviewRoles(reviewerRole, subjectProfile);
   const reviewsList = Array.isArray(response.reviews) ? response.reviews : [];
   const previousReviews = previousRoles.map((role) => {
     const entry = reviewsList.find((r) => (r.reviewer_role || r.reviewerRole) === role);

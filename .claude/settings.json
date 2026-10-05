@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "Bash(node --check src/features/faculty-appraisal/shared/dashboardComponents.jsx)"
     ]
   }
 }

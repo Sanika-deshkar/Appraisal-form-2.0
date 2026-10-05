@@ -20,6 +20,26 @@ import { useSchools } from "../../../services/schoolsService";
 // Pure content, no sidebar/layout of its own - the caller (NonTeachingReviewDashboard) renders
 // this inline as one of its own tabs so switching to/from it stays on the same page instead of
 // swapping to a differently-chromed dashboard.
+// dynamicReviewForm(selected) only recognizes a subject as a dynamic-schema
+// form when its queue payload already carries real custom_..._s_... data
+// (see the "unverified" note in DynamicPartDReviewPanel.jsx — the Part D
+// registrar queue endpoint doesn't always echo that data back). That made a
+// dynamic-form subject with a Registrar-only part silently fall through to
+// the Standard/Creative hardcoded Leave & Attendance UI below, which has no
+// matching fields for it and renders as an empty "User did not fill
+// anything" section instead of the subject's real registrar table(s).
+// Falling back to the subject's own assigned form family (same "custom_"
+// convention used everywhere else a form is identified as dynamic, e.g.
+// useAssignedFormAssignment.js) catches that case without touching how any
+// other dashboard (HOD/Director/Dean/VC, or the Standard/Creative branch
+// here) decides whether a subject is a dynamic form.
+const isDynamicPartDSubject = (subject) => {
+  if (dynamicReviewForm(subject)) return true;
+  const schoolConfig = getSchoolByValue(subject?.school);
+  const assignment = schoolConfig?.defaultForm || schoolConfig?.formVariant || "";
+  return assignment.startsWith("custom_");
+};
+
 const PART_D_DIVISION_META = {
   engineering: { label: "Engineering Schools", color: "#1e40af", bg: "linear-gradient(135deg,#dbeafe,#bfdbfe)" },
   non_engineering: { label: "Non-Engineering Schools", color: "#6b21a8", bg: "linear-gradient(135deg,#f3e8ff,#e9d5ff)" },
@@ -397,7 +417,7 @@ export default function TeachingPartDReviewDashboard({ accent = "#155e75", acade
           )}
         </div>
       ) : (
-        <div style={{ width: "100%", maxWidth: 1100, boxSizing: "border-box", margin: "16px auto 0", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: 18, boxShadow: "0 10px 28px rgba(17,24,39,0.06)" }}>
+        <div style={{ width: "100%", boxSizing: "border-box", marginTop: 16, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: 18, overflowX: "hidden", boxShadow: "0 10px 28px rgba(17,24,39,0.06)" }}>
           <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <button type="button" onClick={() => setSelectedId("")} style={{ background: "#f8fafc", color: "#475569", border: "1px solid #dbe3ef", borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontFamily: "inherit", fontWeight: 800 }}>Back</button>
             <Avatar initials={selected.avatar} src={selected.avatarUrl} color={accent} size={46} />
@@ -409,7 +429,7 @@ export default function TeachingPartDReviewDashboard({ accent = "#155e75", acade
             </div>
           </div>
 
-          {dynamicReviewForm(selected) ? (
+          {isDynamicPartDSubject(selected) ? (
             // Dynamic (admin-built custom schema) form: its own separate review UI,
             // reusing the same fetchPartDRegistrarQueue/submitPartDRegistrarReview
             // endpoints as everything above, but with a schema-driven display
